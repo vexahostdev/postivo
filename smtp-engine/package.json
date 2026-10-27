@@ -1,0 +1,19 @@
+{
+    "name": "postivo-smtp-engine",
+    "private": true,
+    "version": "1.0.0",
+    "description": "SMTP ingress for Postivo: TLS + auth + spool + forward to Laravel. Does not parse MIME.",
+    "main": "server.js",
+    "engines": { "node": ">=20" },
+    "scripts": {
+        "start": "node server.js",
+        "test": "node --test"
+    },
+    "dependencies": {
+        "smtp-server": "^3.13.6"
+    },
+    "devDependencies": {
+        "nodemailer": "^6.9.16",
+        "selfsigned": "^2.4.1"
+    }
+}

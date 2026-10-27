@@ -1,0 +1,33 @@
+@import "tailwindcss";
+@import "@fontsource-variable/inter";
+@import "@fontsource/jetbrains-mono/500.css";
+@import "@fontsource/jetbrains-mono/700.css";
+
+@source "../views/marketing";
+
+@theme {
+  --color-brand: #FE0000;
+  --color-brand-dark: #D60000;
+  --color-brand-50: #FFF5F5;
+  --color-ok: #0F7B3F;
+  --color-warn: #8A5A00;
+  --font-sans: "Inter Variable", Inter, system-ui, -apple-system, "Helvetica Neue", sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, Menlo, monospace;
+}
+
+@layer base {
+  html { scroll-behavior: smooth; }
+  body { margin: 0; background: #fff; color: #0A0A0C; @apply font-sans antialiased overflow-x-hidden; }
+  ::selection { background: var(--color-brand); color: #fff; }
+  :focus-visible { outline: 2px solid var(--color-brand); outline-offset: 2px; }
+  [x-cloak] { display: none !important; }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+  }
+}
+
+@layer utilities {
+  .rail-l { writing-mode: vertical-rl; transform: rotate(180deg); }
+  .rail-r { writing-mode: vertical-rl; }
+  .hairline { border-color: var(--color-brand); }
+}

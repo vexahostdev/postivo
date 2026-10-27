@@ -1,0 +1,57 @@
+@import "tailwindcss";
+@import "@fontsource-variable/inter";
+@import "@fontsource/jetbrains-mono/500.css";
+@import "@fontsource/jetbrains-mono/700.css";
+
+@source "../views";
+@source "../js";
+
+@theme {
+  --color-red-50: #FFF5F5;
+  --color-red-500: #FE0000;
+  --color-red-600: #D60000;
+  --color-paper: #FBFBFD;
+  --color-ink: #0A0A0C;
+  --color-line: #E5E5E5;
+  --color-muted: #6B6B73;
+  --color-ok: #0F7B3F;
+  --color-warn: #8A5A00;
+  --font-sans: "Inter Variable", Inter, ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, Menlo, monospace;
+  /* Console: tanpa radius, bayangan, gradien (FRONTEND_SPEC §2). */
+  --radius-*: initial;
+}
+
+@layer base {
+  html { color-scheme: light; }
+  body { @apply bg-white text-ink font-sans antialiased; }
+  ::selection { background: var(--color-red-500); color: #fff; }
+  :focus-visible { outline: 2px solid var(--color-red-500); outline-offset: 2px; }
+  [x-cloak] { display: none !important; }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation: none !important; transition: none !important; }
+  }
+}
+
+@layer components {
+  .label { @apply block text-xs font-medium text-ink mb-1.5; }
+  .input { @apply w-full bg-white border border-line px-3 py-2 text-sm text-ink placeholder:text-muted/70 focus:border-red-500 focus:outline-none; }
+  .hint { @apply text-xs text-muted mt-1; }
+  .err { @apply text-xs text-red-600 mt-1; }
+
+  .btn, .btn-primary, .btn-outline, .btn-ghost, .btn-danger { @apply inline-flex items-center justify-center gap-2 px-3.5 py-2 text-sm font-semibold border transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed; }
+  .btn-primary { @apply bg-red-500 border-red-500 text-white hover:bg-red-600 hover:border-red-600; }
+  .btn-outline { @apply bg-white border-ink text-ink hover:bg-ink hover:text-white; }
+  .btn-ghost { @apply border-transparent text-ink hover:bg-paper; }
+  .btn-danger { @apply bg-white border-red-500 text-red-500 hover:bg-red-500 hover:text-white; }
+  .btn-sm { @apply px-2.5 py-1 text-xs; }
+
+  .card { @apply bg-white border border-line; }
+  .kicker { @apply font-mono text-[11px] uppercase tracking-wider text-muted; }
+  .th { @apply px-4 py-2.5 text-left font-mono text-[11px] uppercase tracking-wider font-medium text-muted whitespace-nowrap border-b border-line bg-paper; }
+  .td { @apply px-4 py-2.5 text-sm border-b border-line align-middle; }
+  .mono { @apply font-mono text-xs; }
+
+  .nav-link { @apply flex items-center gap-2.5 px-3 py-2 text-sm text-muted hover:text-ink hover:bg-paper border-l-2 border-transparent; }
+  .nav-link-active { @apply text-ink font-semibold border-red-500 bg-red-50; }
+}

@@ -1,0 +1,26 @@
+{
+    "private": true,
+    "type": "module",
+    "scripts": {
+        "build": "vite build",
+        "dev": "vite",
+        "all": "concurrently -n laravel,vite \"php artisan serve --port=8050\" \"npm run dev\"",
+        "all:full": "concurrently -n laravel,vite,smtp,queue,sched \"php artisan serve --port=8050\" \"npm run dev\" \"npm --prefix smtp-engine start\" \"php artisan queue:work --queue=postivo_high,postivo_default,postivo_webhooks\" \"php artisan schedule:work\"",
+        "smtp": "npm --prefix smtp-engine start"
+    },
+    "devDependencies": {
+        "@tailwindcss/vite": "^4.0.0",
+        "axios": "^1.7.4",
+        "concurrently": "^9.0.1",
+        "laravel-vite-plugin": "^1.2.0",
+        "tailwindcss": "^4.0.0",
+        "vite": "^6.0.11"
+    },
+    "dependencies": {
+        "@alpinejs/focus": "^3.14.1",
+        "@fontsource-variable/inter": "^5.2.0",
+        "@fontsource/jetbrains-mono": "^5.2.0",
+        "alpinejs": "^3.14.1",
+        "chart.js": "^4.4.0"
+    }
+}
