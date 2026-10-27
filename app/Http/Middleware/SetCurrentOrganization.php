@@ -28,11 +28,16 @@ class SetCurrentOrganization
             abort(403, 'Mode impersonasi hanya-baca. Keluar dari impersonasi untuk mengubah data.');
         }
 
+        // Staf platform = pengguna biasa juga: pastikan punya organisasi internal.
+        if ($user->isStaff() && ! Member::where('user_id', $user->id)->exists()) {
+            \App\Services\StaffOrganization::ensure($user);
+        }
+
         $memberships = Member::with('organization')->where('user_id', $user->id)->get();
         $member = $memberships->firstWhere('organization_id', session('org_id')) ?? $memberships->first();
 
         if (! $member) {
-            abort(403, 'Akun ini tidak tergabung di organisasi mana pun.');
+            return response()->view('console.no-org', [], 403);
         }
 
         session(['org_id' => $member->organization_id]);

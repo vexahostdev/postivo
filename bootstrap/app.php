@@ -45,6 +45,12 @@ return Application::configure(basePath: dirname(__DIR__))
         $exceptions->dontReport(IngestException::class);
         $exceptions->shouldRenderJsonWhen(fn (Request $r, Throwable $e) => $isApi($r) || $r->expectsJson());
 
+        // Sesi/CSRF kedaluwarsa di halaman web (mis. setelah login lama atau reset DB dev): arahkan ramah, bukan layar "419".
+        $exceptions->render(function (\Illuminate\Session\TokenMismatchException $e, Request $r) use ($isApi) {
+            if (! $isApi($r) && ! $r->expectsJson()) {
+                return redirect()->guest(route('login'))->with('error', 'Sesi Anda sudah kedaluwarsa. Silakan masuk lagi.');
+            }
+        });
         $exceptions->render(function (IngestException $e, Request $r) use ($isApi) {
             if ($isApi($r)) {
                 $h = $e->httpStatus === 429 ? ['Retry-After' => 60] : [];

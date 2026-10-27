@@ -36,9 +36,8 @@ class AuthController extends Controller
         }
         $request->session()->regenerate();
 
-        $home = $request->user()->isStaff() && ! \App\Models\Member::where('user_id', $request->user()->id)->exists() ? route('admin.dashboard') : route('console.dashboard');
-
-        return redirect()->intended($home);
+        // Staf masuk ke panel admin; pengguna biasa ke console. Staf tetap bisa membuka console lewat tautan "Console".
+        return redirect()->intended($request->user()->isStaff() ? route('admin.dashboard') : route('console.dashboard'));
     }
 
     public function showRegister()

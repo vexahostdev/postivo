@@ -22,6 +22,8 @@ Route::middleware('guest')->group(function () {
     Route::post('/register', [AuthController::class, 'register'])->middleware('throttle:10,1')->name('register.attempt');
 });
 Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth')->name('logout');
+// Logout hanya lewat POST (cegah CSRF-logout). Buka /logout langsung (URL ketik/tombol Back) → arahkan dengan ramah, bukan 405.
+Route::get('/logout', fn () => auth()->check() ? redirect()->route('console.dashboard') : redirect()->route('login'));
 
 // --- Console --------------------------------------------------------------
 Route::middleware(['auth', 'org.set'])->prefix('console')->name('console.')->group(function () {

@@ -5,6 +5,7 @@
     <p class="mt-1 text-sm text-muted">Belum punya akun? <a class="font-semibold text-red-500 underline" href="{{ route('register') }}">Daftar gratis</a></p>
 
     @if(session('status'))<p class="mt-4 border border-ok px-3 py-2 text-sm text-ok">{{ session('status') }}</p>@endif
+    @if(session('error'))<p class="mt-4 border border-warn px-3 py-2 text-sm text-warn">{{ session('error') }}</p>@endif
     <form method="POST" action="{{ route('login.attempt') }}" class="mt-8 space-y-4">
         @csrf
         <div>

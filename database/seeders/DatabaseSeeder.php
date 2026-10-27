@@ -19,6 +19,11 @@ class DatabaseSeeder extends Seeder
         $user = User::firstOrCreate(['email' => 'demo@postivo.test'], ['name' => 'Demo User', 'password' => 'password-demo-123']);
         $user->forceFill(['email_verified_at' => now()])->save();
 
+        // Superadmin awal dari ADMIN_EMAIL/ADMIN_PASSWORD (semua lingkungan, bila diisi).
+        if (config('postivo.admin.bootstrap.email') && config('postivo.admin.bootstrap.password')) {
+            \Illuminate\Support\Facades\Artisan::call('postivo:admin:create');
+        }
+
         // Staf platform demo (hanya non-production). 2FA tidak wajib di development.
         if (! app()->isProduction()) {
             foreach (['superadmin', 'support', 'finance'] as $role) {

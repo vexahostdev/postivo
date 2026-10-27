@@ -63,3 +63,28 @@ Artisan::command('postivo:abuse-scan', function (App\Services\ReputationService 
 
 Schedule::command('postivo:heartbeat')->everyMinute();
 Schedule::command('postivo:abuse-scan')->hourly()->withoutOverlapping();
+
+Artisan::command('postivo:admin:create {--email=} {--name=} {--password=}', function () {
+    $cfg = config('postivo.admin.bootstrap');
+    $email = strtolower(trim((string) ($this->option('email') ?: $cfg['email'])));
+    $name = (string) ($this->option('name') ?: $cfg['name']);
+    $password = (string) ($this->option('password') ?: $cfg['password']);
+
+    if (! filter_var($email, FILTER_VALIDATE_EMAIL) || $password === '') {
+        $this->error('Isi ADMIN_EMAIL dan ADMIN_PASSWORD di .env (atau pakai --email / --password).');
+
+        return 1;
+    }
+
+    $existed = App\Models\User::where('email', $email)->exists();
+    $user = App\Models\User::firstOrNew(['email' => $email]);
+    $user->name = $user->exists ? $user->name : $name;
+    $user->password = $password; // di-hash oleh cast 'hashed'
+    $user->forceFill(['platform_role' => 'superadmin', 'email_verified_at' => $user->email_verified_at ?? now(), 'disabled_at' => null])->save();
+
+    App\Services\StaffOrganization::ensure($user); // admin juga bisa memakai console pelanggan
+    App\Services\AdminAudit::system($existed ? 'staff.bootstrap_update' : 'staff.bootstrap_create', 'user', $user->id, null, 'postivo:admin:create');
+    $this->info(($existed ? 'Akun diperbarui' : 'Akun dibuat')." — {$email} (superadmin). 2FA ".($user->hasTwoFactor() ? 'aktif' : 'belum diatur').'.');
+
+    return 0;
+})->purpose('Buat/perbarui akun superadmin dari ADMIN_EMAIL & ADMIN_PASSWORD');

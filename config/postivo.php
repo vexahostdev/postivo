@@ -13,6 +13,13 @@ return [
         'require_2fa' => (bool) env('ADMIN_REQUIRE_2FA', env('APP_ENV') === 'production'),
         'ip_allowlist' => env('ADMIN_IP_ALLOWLIST', ''),
         'session_minutes' => (int) env('ADMIN_SESSION_MINUTES', 120),
+        // Akun superadmin awal, dibuat/diperbarui oleh `php artisan postivo:admin:create`.
+        // Nilai asli hanya di file .env* (gitignored) — jangan taruh di kode atau file *.example.
+        'bootstrap' => [
+            'name' => env('ADMIN_NAME', 'Administrator'),
+            'email' => env('ADMIN_EMAIL'),
+            'password' => env('ADMIN_PASSWORD'),
+        ],
     ],
 
     'support_email' => env('POSTIVO_SUPPORT_EMAIL', 'support@postivo.my.id'),
