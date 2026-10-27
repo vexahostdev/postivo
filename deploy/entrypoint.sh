@@ -17,5 +17,8 @@ if [ "${APP_ENV}" != "local" ]; then
     php artisan view:cache
 fi
 
+# Spool bersama smtp-engine: grup 82 (www-data) harus bisa baca/hapus berkas yang ditulis engine.
+if [ -n "${POSTIVO_SPOOL_DIR:-}" ]; then mkdir -p "$POSTIVO_SPOOL_DIR"; chgrp 82 "$POSTIVO_SPOOL_DIR" 2>/dev/null || true; chmod 2770 "$POSTIVO_SPOOL_DIR" 2>/dev/null || true; fi
+
 chown -R www-data:www-data storage bootstrap/cache 2>/dev/null || true
 exec "$@"

@@ -10,10 +10,10 @@ x-app: &app
   environment: &appenv
     DB_HOST: mysql
     REDIS_HOST: redis
-    POSTIVO_SPOOL_DIR: /var/www/html/storage/app/spool
+    POSTIVO_SPOOL_DIR: /spool
   volumes:
     - storage:/var/www/html/storage/app/public
-    - spool:/var/www/html/storage/app/spool
+    - spool:/spool
     - logs:/var/www/html/storage/logs
   depends_on:
     mysql: { condition: service_healthy }

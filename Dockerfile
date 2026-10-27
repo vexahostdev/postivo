@@ -41,3 +41,8 @@ CMD ["php-fpm"]
 FROM caddy:2-alpine AS web
 COPY deploy/Caddyfile /etc/caddy/Caddyfile
 COPY --from=app /var/www/html/public /var/www/html/public
+
+# ---- 5. Web untuk Coolify (tanpa TLS: TLS & domain ditangani proxy Coolify) ------------------------
+FROM caddy:2-alpine AS web-coolify
+COPY deploy/Caddyfile.coolify /etc/caddy/Caddyfile
+COPY --from=app /var/www/html/public /var/www/html/public

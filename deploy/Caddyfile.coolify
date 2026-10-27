@@ -1,0 +1,13 @@
+# Dipakai di Coolify: proxy Coolify (Traefik) sudah mengurus HTTPS; Caddy hanya melayani HTTP di port 80.
+{
+	auto_https off
+	admin off
+}
+
+:80 {
+	root * /var/www/html/public
+	encode zstd gzip
+	php_fastcgi app:9000
+	file_server
+	header -Server
+}

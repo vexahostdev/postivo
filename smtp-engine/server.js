@@ -141,7 +141,7 @@ function buildServer(mode) {
             const ingestId = crypto.randomUUID();
             const file = path.join(cfg.spool, `${ingestId}.eml`);
             try {
-                await pipeline(stream, fs.createWriteStream(file, { mode: 0o600, flags: 'wx' }));
+                await pipeline(stream, fs.createWriteStream(file, { mode: 0o660, flags: 'wx' }));
                 if (stream.sizeExceeded) throw smtpError(552, '5.3.4 Message size exceeds limit');
                 const fd = fs.openSync(file, 'r+'); fs.fsyncSync(fd); fs.closeSync(fd);
 

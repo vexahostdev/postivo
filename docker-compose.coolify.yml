@@ -1,0 +1,207 @@
+# Postivo untuk Coolify (build pack: Docker Compose). Panduan: docs/COOLIFY.md
+# - Domain diatur di UI Coolify pada service `web` (port 80), BUKAN di file ini.
+# - Semua variabel dibaca dari Environment Variables di Coolify (nilai kosong = tidak diisi).
+# - Port SMTP di host bisa diganti per environment (production 587/465; staging/dev port lain).
+name: postivo
+
+x-env: &env
+  DB_CONNECTION: mysql
+  DB_HOST: mysql
+  DB_PORT: "3306"
+  DB_DATABASE: ${DB_DATABASE:-postivo_db}
+  DB_USERNAME: ${DB_USERNAME:-postivo_user}
+  DB_PASSWORD: ${DB_PASSWORD:?isi DB_PASSWORD}
+  REDIS_HOST: redis
+  REDIS_PORT: "6379"
+  REDIS_PASSWORD: "null"
+  POSTIVO_SPOOL_DIR: /spool
+  APP_NAME: ${APP_NAME:-Postivo}
+  APP_ENV: ${APP_ENV:-production}
+  APP_KEY: ${APP_KEY:-}
+  APP_DEBUG: ${APP_DEBUG:-false}
+  APP_URL: ${APP_URL:-}
+  APP_LOCALE: ${APP_LOCALE:-id}
+  APP_FALLBACK_LOCALE: ${APP_FALLBACK_LOCALE:-en}
+  BCRYPT_ROUNDS: ${BCRYPT_ROUNDS:-12}
+  LOG_CHANNEL: ${LOG_CHANNEL:-stderr}
+  LOG_LEVEL: ${LOG_LEVEL:-warning}
+  SESSION_DRIVER: ${SESSION_DRIVER:-redis}
+  SESSION_LIFETIME: ${SESSION_LIFETIME:-120}
+  SESSION_SECURE_COOKIE: ${SESSION_SECURE_COOKIE:-true}
+  CACHE_STORE: ${CACHE_STORE:-redis}
+  QUEUE_CONNECTION: ${QUEUE_CONNECTION:-redis}
+  REDIS_CLIENT: ${REDIS_CLIENT:-predis}
+  MAIL_MAILER: ${MAIL_MAILER:-brevo}
+  MAIL_FROM_ADDRESS: ${MAIL_FROM_ADDRESS:-noreply@postivo.my.id}
+  MAIL_FROM_NAME: ${MAIL_FROM_NAME:-Postivo}
+  POSTIVO_SUPPORT_EMAIL: ${POSTIVO_SUPPORT_EMAIL:-support@postivo.my.id}
+  BREVO_SMTP_HOST: ${BREVO_SMTP_HOST:-smtp-relay.brevo.com}
+  BREVO_SMTP_PORT: ${BREVO_SMTP_PORT:-587}
+  BREVO_SMTP_LOGIN: ${BREVO_SMTP_LOGIN:-}
+  BREVO_SMTP_KEY: ${BREVO_SMTP_KEY:-}
+  POSTIVO_APP_HOST: ${POSTIVO_APP_HOST:-postivo.my.id}
+  POSTIVO_API_URL: ${POSTIVO_API_URL:-https://api.postivo.my.id}
+  POSTIVO_SMTP_HOST: ${POSTIVO_SMTP_HOST:-smtp.postivo.my.id}
+  POSTIVO_SPF_INCLUDE: ${POSTIVO_SPF_INCLUDE:-spf.postivo.my.id}
+  POSTIVO_BOUNCE_TARGET: ${POSTIVO_BOUNCE_TARGET:-bounce.postivo.my.id}
+  POSTIVO_TRACKING_TARGET: ${POSTIVO_TRACKING_TARGET:-trk.postivo.my.id}
+  POSTIVO_TRACKING_URL: ${POSTIVO_TRACKING_URL:-https://trk.postivo.my.id}
+  POSTIVO_DMARC_RUA: ${POSTIVO_DMARC_RUA:-dmarc@postivo.my.id}
+  POSTIVO_DNS_ASSUME_OK: ${POSTIVO_DNS_ASSUME_OK:-false}
+  POSTIVO_RELAY: ${POSTIVO_RELAY:-smtp}
+  POSTIVO_STALWART_DSN: ${POSTIVO_STALWART_DSN:-}
+  POSTIVO_BREVO_DSN: ${POSTIVO_BREVO_DSN:-}
+  POSTIVO_INTERNAL_SECRET: ${POSTIVO_INTERNAL_SECRET:-}
+  POSTIVO_WEBHOOK_ALLOW_LOCAL: ${POSTIVO_WEBHOOK_ALLOW_LOCAL:-false}
+  POSTIVO_CSP: ${POSTIVO_CSP:-report}
+  XENDIT_SECRET_KEY: ${XENDIT_SECRET_KEY:-}
+  XENDIT_WEBHOOK_TOKEN: ${XENDIT_WEBHOOK_TOKEN:-}
+  INTERNAL_WEBHOOK_SECRET: ${INTERNAL_WEBHOOK_SECRET:-}
+  POSTIVO_BILLING_SIMULATOR: ${POSTIVO_BILLING_SIMULATOR:-false}
+  ADMIN_REQUIRE_2FA: ${ADMIN_REQUIRE_2FA:-true}
+  ADMIN_IP_ALLOWLIST: ${ADMIN_IP_ALLOWLIST:-}
+  ADMIN_SESSION_MINUTES: ${ADMIN_SESSION_MINUTES:-120}
+  ADMIN_NAME: ${ADMIN_NAME:-Administrator}
+  ADMIN_EMAIL: ${ADMIN_EMAIL:-}
+  ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
+
+x-app: &app
+  build: { context: ., target: app }
+  restart: unless-stopped
+  environment: *env
+  volumes:
+    - storage:/var/www/html/storage/app/public
+    - spool:/spool
+  depends_on:
+    mysql: { condition: service_healthy }
+    redis: { condition: service_healthy }
+
+services:
+  app:
+    <<: *app
+    environment:
+      <<: *env
+      RUN_MIGRATIONS: "true"
+    healthcheck:
+      test: ["CMD-SHELL", "php-fpm -t >/dev/null 2>&1 || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  # Pasang domain (https://postivo.my.id, https://api.postivo.my.id, https://trk.postivo.my.id) di service ini, port 80.
+  web:
+    build: { context: ., target: web-coolify }
+    restart: unless-stopped
+    depends_on: [app]
+
+  queue:
+    <<: *app
+    command: php artisan queue:work redis --queue=default --sleep=1 --tries=3 --max-time=3600 --memory=256
+    depends_on:
+      app: { condition: service_healthy }
+      mysql: { condition: service_healthy }
+      redis: { condition: service_healthy }
+
+  scheduler:
+    <<: *app
+    command: php artisan schedule:work
+    depends_on:
+      app: { condition: service_healthy }
+      mysql: { condition: service_healthy }
+      redis: { condition: service_healthy }
+
+  # Sertifikat TLS untuk host SMTP (proxy Coolify tidak melayani port SMTP). DNS-01 via Cloudflare.
+  certbot:
+    image: certbot/dns-cloudflare:latest
+    restart: unless-stopped
+    environment:
+      CLOUDFLARE_API_TOKEN: ${CLOUDFLARE_API_TOKEN:?isi CLOUDFLARE_API_TOKEN (izin Zone:DNS:Edit)}
+      LETSENCRYPT_EMAIL: ${LETSENCRYPT_EMAIL:?isi LETSENCRYPT_EMAIL}
+      SMTP_HOST: ${POSTIVO_SMTP_HOST:-smtp.postivo.my.id}
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        umask 077
+        printf 'dns_cloudflare_api_token = %s\n' "$$CLOUDFLARE_API_TOKEN" > /tmp/cf.ini
+        while :; do
+          certbot certonly --non-interactive --agree-tos -m "$$LETSENCRYPT_EMAIL" \
+            --dns-cloudflare --dns-cloudflare-credentials /tmp/cf.ini --dns-cloudflare-propagation-seconds 40 \
+            -d "$$SMTP_HOST" --keep-until-expiring || echo "certbot gagal; coba lagi 12 jam lagi"
+          sleep 43200 & wait $$!
+        done
+    volumes: [letsencrypt:/etc/letsencrypt]
+
+  smtp:
+    build: { context: ./smtp-engine }
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      APP_INTERNAL_URL: http://web
+      POSTIVO_INTERNAL_SECRET: ${POSTIVO_INTERNAL_SECRET:?isi POSTIVO_INTERNAL_SECRET}
+      POSTIVO_SMTP_HOST: ${POSTIVO_SMTP_HOST:-smtp.postivo.my.id}
+      POSTIVO_SPOOL_DIR: /spool
+      SMTP_PORTS: "587:starttls,465:tls"
+    ports:
+      - "${SMTP_STARTTLS_PORT:-587}:587"
+      - "${SMTP_TLS_PORT:-465}:465"
+    volumes:
+      - spool:/spool
+      - letsencrypt:/etc/letsencrypt:ro
+    cap_drop: [ALL]
+    cap_add: [NET_BIND_SERVICE, CHOWN, DAC_OVERRIDE, FOWNER]
+    depends_on: [web, certbot]
+
+  mysql:
+    image: mysql:8.4
+    restart: unless-stopped
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci --innodb-buffer-pool-size=${MYSQL_BUFFER_POOL:-512M}
+    environment:
+      MYSQL_DATABASE: ${DB_DATABASE:-postivo_db}
+      MYSQL_USER: ${DB_USERNAME:-postivo_user}
+      MYSQL_PASSWORD: ${DB_PASSWORD:?isi DB_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:?isi DB_ROOT_PASSWORD}
+    volumes: [mysql:/var/lib/mysql]
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p$$MYSQL_ROOT_PASSWORD --silent"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: redis-server --appendonly yes --appendfsync everysec --maxmemory-policy noeviction
+    volumes: [redis:/data]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+
+  # Dump MySQL tiap 24 jam ke volume `backups`, simpan 14 hari. SALIN keluar server (lihat docs/COOLIFY.md).
+  backup:
+    image: mysql:8.4
+    restart: unless-stopped
+    environment:
+      MYSQL_PWD: ${DB_ROOT_PASSWORD:?isi DB_ROOT_PASSWORD}
+      DB_DATABASE: ${DB_DATABASE:-postivo_db}
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        while :; do
+          f=/backups/postivo-$$(date +%Y%m%d-%H%M%S).sql.gz
+          mysqldump -h mysql -uroot --single-transaction --quick --routines "$$DB_DATABASE" | gzip -9 > "$$f" && echo "backup ok $$f" || rm -f "$$f"
+          find /backups -name 'postivo-*.sql.gz' -mtime +14 -delete
+          sleep 86400
+        done
+    volumes: [backups:/backups]
+    depends_on:
+      mysql: { condition: service_healthy }
+
+volumes:
+  mysql:
+  redis:
+  storage:
+  spool:
+  letsencrypt:
+  backups:
