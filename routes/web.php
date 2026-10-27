@@ -93,3 +93,67 @@ Route::match(['get', 'post'], '/api/payment/xendit/callback', \App\Http\Controll
 
 // --- Dokumentasi publik ------------------------------------------------------------------
 Route::view('/docs', 'docs.index')->name('docs');
+
+// --- Impersonasi (hanya-baca) ---------------------------------------------------------------
+Route::post('/impersonate/stop', [\App\Http\Controllers\ImpersonationController::class, 'stop'])->middleware('auth')->name('impersonate.stop');
+
+// --- Admin platform (ADMIN_PANEL_SPEC.md) -----------------------------------------------------
+Route::middleware(['auth', 'staff'])->prefix('admin')->name('admin.')->group(function () {
+    $A = 'App\\Http\\Controllers\\Admin\\';
+    Route::get('/security', [$A.'SecurityController', 'index'])->name('security');
+    Route::post('/security/enable', [$A.'SecurityController', 'enable'])->name('security.enable');
+    Route::get('/two-factor', [$A.'SecurityController', 'challenge'])->name('two-factor');
+    Route::post('/two-factor', [$A.'SecurityController', 'verify'])->name('two-factor.verify');
+
+    Route::get('/', $A.'DashboardController')->name('dashboard');
+
+    Route::get('/organizations', [$A.'OrganizationController', 'index'])->name('organizations.index');
+    Route::get('/organizations/{id}', [$A.'OrganizationController', 'show'])->name('organizations.show');
+    Route::post('/organizations/{id}/suspend', [$A.'OrganizationController', 'suspend'])->name('organizations.suspend');
+    Route::post('/organizations/{id}/unsuspend', [$A.'OrganizationController', 'unsuspend'])->name('organizations.unsuspend');
+    Route::post('/organizations/{id}/plan', [$A.'OrganizationController', 'plan'])->name('organizations.plan');
+    Route::post('/organizations/{id}/note', [$A.'OrganizationController', 'note'])->name('organizations.note');
+    Route::post('/organizations/{id}/impersonate', [$A.'OrganizationController', 'impersonate'])->name('organizations.impersonate');
+
+    Route::get('/users', [$A.'UserController', 'index'])->name('users.index');
+    Route::get('/users/{id}', [$A.'UserController', 'show'])->name('users.show');
+    Route::post('/users/{id}/verify', [$A.'UserController', 'verify'])->name('users.verify');
+    Route::post('/users/{id}/reset', [$A.'UserController', 'sendReset'])->name('users.reset');
+    Route::post('/users/{id}/disable', [$A.'UserController', 'toggleDisabled'])->name('users.disable');
+    Route::post('/users/{id}/staff-role', [$A.'UserController', 'staffRole'])->name('users.staff-role');
+    Route::post('/users/{id}/reset-2fa', [$A.'UserController', 'reset2fa'])->name('users.reset-2fa');
+
+    Route::get('/domains', [$A.'DomainController', 'index'])->name('domains.index');
+    Route::post('/domains/{id}/reaudit', [$A.'DomainController', 'reaudit'])->name('domains.reaudit');
+    Route::post('/domains/{id}/suspend', [$A.'DomainController', 'toggleSuspend'])->name('domains.suspend');
+
+    Route::get('/emails', [$A.'EmailController', 'index'])->name('emails.index');
+    Route::get('/emails/{id}', [$A.'EmailController', 'show'])->name('emails.show');
+
+    Route::get('/abuse', $A.'AbuseController')->name('abuse');
+
+    Route::get('/billing', [$A.'BillingController', 'index'])->name('billing.index');
+    Route::get('/billing/orders/{id}', [$A.'BillingController', 'show'])->name('billing.show');
+    Route::post('/billing/orders/{id}/mark-paid', [$A.'BillingController', 'markPaid'])->name('billing.mark-paid');
+    Route::post('/billing/orders/{id}/expire', [$A.'BillingController', 'expire'])->name('billing.expire');
+    Route::post('/billing/events/{id}/reprocess', [$A.'BillingController', 'reprocess'])->name('billing.reprocess');
+
+    Route::get('/plans', [$A.'PlanController', 'index'])->name('plans.index');
+    Route::post('/plans/{key}', [$A.'PlanController', 'save'])->name('plans.save');
+
+    Route::get('/blocklist', [$A.'BlocklistController', 'index'])->name('blocklist.index');
+    Route::post('/blocklist', [$A.'BlocklistController', 'store'])->name('blocklist.store');
+    Route::delete('/blocklist/{id}', [$A.'BlocklistController', 'destroy'])->name('blocklist.destroy');
+
+    Route::get('/suppressions', [$A.'SuppressionController', 'index'])->name('suppressions.index');
+    Route::delete('/suppressions/{id}', [$A.'SuppressionController', 'destroy'])->name('suppressions.destroy');
+
+    Route::get('/system', [$A.'SystemController', 'index'])->name('system.index');
+    Route::post('/system/jobs/{uuid}/retry', [$A.'SystemController', 'retryJob'])->name('system.retry');
+    Route::delete('/system/jobs/{uuid}', [$A.'SystemController', 'deleteJob'])->name('system.delete');
+    Route::post('/system/breaker/{relay}/reset', [$A.'SystemController', 'resetBreaker'])->name('system.breaker');
+
+    Route::get('/audit', $A.'AuditController')->name('audit');
+    Route::get('/settings', [$A.'SettingsController', 'index'])->name('settings.index');
+    Route::post('/settings', [$A.'SettingsController', 'update'])->name('settings.update');
+});

@@ -31,6 +31,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'org.set' => SetCurrentOrganization::class,
             'role' => RequireRole::class,
             'internal' => VerifyInternalSecret::class,
+            'staff' => \App\Http\Middleware\EnsureStaff::class,
         ]);
         $middleware->api(prepend: [SetRequestId::class]);
         $middleware->redirectGuestsTo(fn () => route('login'));

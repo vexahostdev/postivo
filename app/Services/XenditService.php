@@ -24,7 +24,7 @@ class XenditService
             return ['success' => false, 'error' => 'Pembayaran online belum dikonfigurasi (XENDIT_SECRET_KEY kosong).'];
         }
 
-        $plan = config("postivo.plans.{$order->plan}");
+        $plan = \App\Support\Plans::get($order->plan);
         $payload = [
             'external_id' => $order->external_id,
             'amount' => $order->amount,

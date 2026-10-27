@@ -547,6 +547,7 @@ Unit (service: DKIM, tracking rewriter, state machine, signature webhook), Featu
 ### 14.3 Change Log
 | Versi | Perubahan |
 |---|---|
+| 3.2.0 | Admin panel platform (`ADMIN_PANEL_SPEC.md`): peran staf, 2FA, audit append-only, impersonasi hanya-baca, reputasi/abuse, katalog plan di DB, blocklist global, kesehatan sistem, pengaturan platform. |
 | 3.1.0 | Domain produksi `postivo.my.id` (staging/dev lewat env). Penagihan: plan Free/Starter/Growth/Scale (harga placeholder di `config/postivo.php`), checkout Xendit dengan `external_id` `PSV-`, callback via webhook sentral VexaHost. Email sistem lewat Brevo SMTP (`noreply@`/`support@postivo.my.id`) dengan 13 notifikasi. Halaman `/docs`, reset password, verifikasi email, undangan tim. Autentikasi smtp-engine via HTTP `/internal/smtp/auth` (bukan hash Redis). |
 | 3.0.0 | Rewrite total: daftar isi sesuai isi; state machine dan event dipisah; opens/clicks jadi event; API contract lengkap; kontrak SMTP; klaim marketing didefinisikan ulang; keputusan auth (session + API key custom, tanpa Sanctum); DKIM memakai Symfony DkimSigner; tracking default off; Tailwind 4 + Vite 7 dikunci; PHP 8.3 |
 | 2.0.0 | Draf awal (tidak lengkap) |

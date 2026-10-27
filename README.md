@@ -18,6 +18,15 @@ npm run all                    # Laravel :8050 + Vite
 - `npm run all:full` = + SMTP engine + queue worker + scheduler (set `QUEUE_CONNECTION=database`/`redis`).
 - `php artisan test` — suite lengkap.
 
+## Admin panel platform
+
+Rancangan lengkap: [ADMIN_PANEL_SPEC.md](ADMIN_PANEL_SPEC.md). Buka `/admin` (404 untuk non-staf). Peran staf: `superadmin`, `support`, `finance`
+(matriks izin di spec). Modul: dashboard, organisasi (suspend, ubah plan, impersonasi hanya-baca, catatan), pengguna & staf, domain, email lintas org,
+abuse & reputasi (`postivo:abuse-scan`), order & pembayaran (tandai lunas manual, proses ulang webhook), katalog plan & harga, blocklist global,
+suppression, kesehatan sistem, log audit append-only, pengaturan platform, 2FA TOTP.
+Seeder development membuat `superadmin@`, `support@`, `finance@postivo.test` (password `password-demo-123`). Di production angkat staf pertama lewat tinker:
+`User::where('email','…')->first()->forceFill(['platform_role'=>'superadmin'])->save();` — 2FA wajib (`ADMIN_REQUIRE_2FA`).
+
 ## Lingkungan & domain
 
 | | development | staging | production |

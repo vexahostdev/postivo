@@ -3,7 +3,7 @@
     <table>
         <thead><tr><th>Paket</th><th>Harga / bulan</th><th>Kuota email / bulan</th><th>Batas harian</th></tr></thead>
         <tbody>
-            @foreach(config('postivo.plans') as $p)
+            @foreach(\App\Support\Plans::active() as $p)
                 <tr><td><b>{{ $p['name'] }}</b></td><td>{{ $p['price'] ? 'Rp '.number_format($p['price'], 0, ',', '.') : 'Gratis' }}</td><td>{{ number_format($p['monthly_quota']) }}</td><td>{{ $p['daily_limit'] ? number_format($p['daily_limit']) : 'Tanpa batas' }}</td></tr>
             @endforeach
         </tbody>

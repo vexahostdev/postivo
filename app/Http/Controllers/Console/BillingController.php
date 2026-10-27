@@ -20,7 +20,7 @@ class BillingController extends Controller
         $used = (int) DB::table('usage_counters')->where('organization_id', $org->id)->where('period', now()->format('Y-m'))->value('sent');
 
         return view('console.billing.index', [
-            'plans' => config('postivo.plans'),
+            'plans' => \App\Support\Plans::active(),
             'used' => $used,
             'orders' => Order::query()->latest()->limit(20)->get(),
         ]);

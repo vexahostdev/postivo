@@ -24,6 +24,6 @@ class Order extends Model
 
     public function planName(): string
     {
-        return config("postivo.plans.{$this->plan}.name", ucfirst($this->plan));
+        return \App\Support\Plans::get($this->plan)["name"] ?? ucfirst($this->plan);
     }
 }

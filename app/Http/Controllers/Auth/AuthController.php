@@ -30,21 +30,28 @@ class AuthController extends Controller
     {
         $cred = $request->validate(['email' => ['required', 'email'], 'password' => ['required']]);
 
-        if (! Auth::attempt($cred, $request->boolean('remember'))) {
-            return back()->withInput($request->only('email'))->withErrors(['email' => 'Email atau kata sandi salah.']);
+        // Akun dinonaktifkan admin tidak boleh masuk (pesan sama agar tidak membocorkan status).
+        if (! Auth::attempt($cred + ['disabled_at' => null], $request->boolean('remember'))) {
+            return back()->withInput($request->only('email'))->withErrors(['email' => 'Email atau kata sandi salah, atau akun dinonaktifkan.']);
         }
         $request->session()->regenerate();
 
-        return redirect()->intended(route('console.dashboard'));
+        $home = $request->user()->isStaff() && ! \App\Models\Member::where('user_id', $request->user()->id)->exists() ? route('admin.dashboard') : route('console.dashboard');
+
+        return redirect()->intended($home);
     }
 
     public function showRegister()
     {
-        return view('auth.register');
+        return view('auth.register', ['open' => (bool) \App\Services\PlatformSettings::get('signups_open')]);
     }
 
     public function register(Request $request): RedirectResponse
     {
+        if (! \App\Services\PlatformSettings::get('signups_open')) {
+            return back()->withErrors(['email' => 'Pendaftaran baru sedang ditutup sementara.']);
+        }
+
         $data = $request->validate([
             'name' => ['required', 'string', 'max:120'],
             'organization' => ['required', 'string', 'max:120'],
@@ -54,7 +61,7 @@ class AuthController extends Controller
 
         $user = DB::transaction(function () use ($data) {
             $user = User::create(['name' => $data['name'], 'email' => strtolower($data['email']), 'password' => $data['password']]);
-            $plan = config('postivo.plans.free');
+            $plan = \App\Support\Plans::get("free");
             $org = Organization::create([
                 'name' => $data['organization'],
                 'slug' => Str::slug($data['organization']).'-'.Str::lower(Str::random(5)),

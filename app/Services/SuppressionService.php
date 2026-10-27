@@ -9,8 +9,17 @@ class SuppressionService
 {
     public function isSuppressed(string $orgId, string $email): bool
     {
-        return Suppression::withoutGlobalScopes()
+        return $this->isBlocked($email) || Suppression::withoutGlobalScopes()
             ->where('organization_id', $orgId)->where('email_hash', Addr::hash($email))->exists();
+    }
+
+    /** Blocklist global platform (alamat persis atau "@domain"), dikelola admin. */
+    public function isBlocked(string $email): bool
+    {
+        $e = Addr::normalize($email);
+
+        return \Illuminate\Support\Facades\DB::table('blocked_recipients')
+            ->whereIn('pattern', [$e, '@'.Addr::domainOf($e)])->exists();
     }
 
     public function add(string $orgId, string $email, string $reason, ?string $dispatchId = null, ?string $note = null): Suppression

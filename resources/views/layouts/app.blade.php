@@ -48,6 +48,7 @@
                     <button class="btn-ghost btn-sm -ml-2.5 text-muted"><x-icon name="logout" class="size-3.5" />Keluar</button>
                 </form>
                 <a href="{{ route('docs') }}" class="btn-ghost btn-sm text-muted"><x-icon name="book" class="size-3.5" />Docs</a>
+                @if(auth()->user()->isStaff() && ! session('impersonator_id'))<a href="{{ route('admin.dashboard') }}" class="btn-ghost btn-sm text-red-500">Admin</a>@endif
             </div>
             <p class="mt-3 text-[10px] leading-snug text-muted">© {{ date('Y') }} postivo. All rights reserved. Created by postivo</p>
         </div>
@@ -60,6 +61,15 @@
             <span class="w-9"></span>
         </header>
         <main id="main" class="mx-auto max-w-[1280px] px-4 py-6 sm:px-6">
+            @if(session('impersonator_id'))
+                <div class="mb-5 flex flex-wrap items-center justify-between gap-3 border-2 border-red-500 bg-red-50 px-4 py-3 text-sm text-red-600" role="alert">
+                    <span><b>Mode impersonasi (hanya-baca)</b> — Anda melihat console sebagai {{ auth()->user()->email }}. Semua aksi tercatat di audit.</span>
+                    <form method="POST" action="{{ route('impersonate.stop') }}">@csrf<button class="btn-primary btn-sm">Keluar impersonasi</button></form>
+                </div>
+            @endif
+            @if(($ann = \App\Services\PlatformSettings::get('announcement')) !== '')
+                <div class="mb-5 border border-ink bg-paper px-4 py-3 text-sm" role="status"><span class="kicker mr-2">Pengumuman</span>{{ $ann }}</div>
+            @endif
             @unless(auth()->user()->hasVerifiedEmail())
                 <div class="mb-5 flex flex-wrap items-center justify-between gap-3 border border-warn px-4 py-3 text-sm text-warn" role="alert">
                     <span>Email <b>{{ auth()->user()->email }}</b> belum diverifikasi. API key live memerlukan verifikasi.</span>

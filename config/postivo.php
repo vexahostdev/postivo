@@ -8,6 +8,13 @@ return [
         'docs' => env('POSTIVO_DOCS_URL'),
     ],
 
+    // Panel admin platform (ADMIN_PANEL_SPEC.md).
+    'admin' => [
+        'require_2fa' => (bool) env('ADMIN_REQUIRE_2FA', env('APP_ENV') === 'production'),
+        'ip_allowlist' => env('ADMIN_IP_ALLOWLIST', ''),
+        'session_minutes' => (int) env('ADMIN_SESSION_MINUTES', 120),
+    ],
+
     'support_email' => env('POSTIVO_SUPPORT_EMAIL', 'support@postivo.my.id'),
 
     // Harga PLACEHOLDER (keputusan terbuka PRD §14.2) — ubah di sini, checkout & landing otomatis mengikuti.

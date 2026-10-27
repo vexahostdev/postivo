@@ -172,7 +172,7 @@
                 <span class="text-[11px] font-semibold text-brand">IDR · per bulan</span>
             </div>
             <div class="grid sm:grid-cols-2 lg:grid-cols-4">
-                @foreach(config('postivo.plans') as $key => $p)
+                @foreach(\App\Support\Plans::active() as $key => $p)
                     <div class="hairline flex flex-col border-b py-5 sm:pr-5">
                         <h3 class="text-[22px] font-bold tracking-[-0.03em] text-brand">{{ $p['name'] }}</h3>
                         <p class="mt-2 text-[28px] font-bold tracking-[-0.03em]">{{ $p['price'] ? 'Rp '.number_format($p['price'], 0, ',', '.') : 'Gratis' }}</p>

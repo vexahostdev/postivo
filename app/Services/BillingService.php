@@ -19,8 +19,8 @@ class BillingService
 
     public function plan(string $key): array
     {
-        $plan = config("postivo.plans.$key");
-        if (! $plan || $plan['price'] <= 0) {
+        $plan = \App\Support\Plans::get($key);
+        if (! $plan || $plan['price'] <= 0 || ! $plan['is_active']) {
             abort(404, 'Paket tidak tersedia untuk dibeli.');
         }
 
@@ -65,7 +65,7 @@ class BillingService
             $locked->update(['status' => 'PAID', 'paid_at' => now(), 'payment_method' => $method ?? $locked->payment_method, 'raw_payload' => $payload ?: $locked->raw_payload]);
 
             $org = Organization::findOrFail($locked->organization_id);
-            $plan = config("postivo.plans.{$locked->plan}");
+            $plan = \App\Support\Plans::get($locked->plan);
             // Perpanjangan paket yang sama menyambung dari masa aktif; ganti paket mulai dari sekarang.
             $base = $org->plan === $locked->plan && $org->plan_expires_at?->isFuture() ? $org->plan_expires_at : now();
             $org->update([
@@ -96,7 +96,7 @@ class BillingService
         $warned = $expired = 0;
         Organization::query()->where('plan', '!=', 'free')->whereNotNull('plan_expires_at')->each(function (Organization $org) use (&$warned, &$expired) {
             if ($org->plan_expires_at->isPast()) {
-                $free = config('postivo.plans.free');
+                $free = \App\Support\Plans::get("free");
                 $old = $org->plan;
                 $org->update(['plan' => 'free', 'monthly_quota' => $free['monthly_quota'], 'daily_limit' => $free['daily_limit'], 'plan_expires_at' => null]);
                 $org->notifyAdmins(new PlanExpiredNotification($org, $old));

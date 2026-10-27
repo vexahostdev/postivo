@@ -35,3 +35,31 @@ Artisan::command('postivo:billing-sweep', function (App\Services\BillingService 
 })->purpose('Peringatan & penurunan paket kedaluwarsa, kedaluwarsakan order pending');
 
 Schedule::command('postivo:billing-sweep')->dailyAt('02:00');
+
+Artisan::command('postivo:heartbeat', function () {
+    Illuminate\Support\Facades\Cache::forever('postivo:heartbeat', time());
+})->purpose('Penanda scheduler hidup (dibaca admin /system)');
+
+Artisan::command('postivo:abuse-scan', function (App\Services\ReputationService $rep) {
+    $auto = (bool) App\Services\PlatformSettings::get('abuse_auto_suspend');
+    $n = 0;
+    foreach ($rep->scan(7) as $r) {
+        if ($r['level'] !== 'DANGER' || $r['org']->isSuspended()) {
+            continue;
+        }
+        // Satu peringatan per org per hari.
+        if (! Illuminate\Support\Facades\Cache::add("postivo:abuse:{$r['org']->id}:".now()->format('Ymd'), 1, now()->addDay())) {
+            continue;
+        }
+        if ($auto) {
+            $rep->suspend($r['org'], "Penangguhan otomatis: bounce {$r['bounce_rate']}%, komplain {$r['complaint_rate']}% (7 hari).");
+        }
+        App\Services\AdminAudit::system($auto ? 'abuse.auto_suspend' : 'abuse.alert', 'organization', $r['org']->id, $r['org']->id, null, Illuminate\Support\Arr::except($r, ['org']));
+        Illuminate\Support\Facades\Notification::route('mail', config('postivo.support_email'))->notify(new App\Notifications\AbuseAlertNotification($r['org'], $r, $auto));
+        $n++;
+    }
+    $this->info("Abuse alerts: {$n}");
+})->purpose('Pindai reputasi org; peringatan/auto-suspend level DANGER');
+
+Schedule::command('postivo:heartbeat')->everyMinute();
+Schedule::command('postivo:abuse-scan')->hourly()->withoutOverlapping();
