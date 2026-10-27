@@ -14,6 +14,40 @@ use Illuminate\Support\Facades\Route;
 
 Route::view('/', 'marketing.landing')->name('landing');
 
+// --- Kesehatan (untuk load balancer / uptime monitor; tanpa data sensitif) ----------------------
+Route::get('/healthz', fn () => response()->json(['status' => 'ok']))->name('healthz');
+Route::get('/readyz', function () {
+    $check = function (callable $fn): bool {
+        try {
+            $fn();
+
+            return true;
+        } catch (Throwable) {
+            return false;
+        }
+    };
+    $hb = (int) Illuminate\Support\Facades\Cache::get('postivo:heartbeat', 0);
+    $checks = [
+        'database' => $check(fn () => Illuminate\Support\Facades\DB::select('select 1')),
+        'cache' => $check(function () {
+            Illuminate\Support\Facades\Cache::put('postivo:ready', 1, 10);
+            if (Illuminate\Support\Facades\Cache::get('postivo:ready') !== 1) {
+                throw new RuntimeException('cache');
+            }
+        }),
+        // Scheduler dianggap hidup bila heartbeat < 3 menit; belum pernah jalan = tidak diperiksa di non-production.
+        'scheduler' => $hb ? (time() - $hb) < 180 : ! app()->isProduction(),
+    ];
+    $ok = ! in_array(false, $checks, true);
+
+    return response()->json(['status' => $ok ? 'ready' : 'degraded', 'checks' => $checks], $ok ? 200 : 503);
+})->name('readyz');
+
+// --- Halaman legal ---------------------------------------------------------------------------
+Route::view('/terms', 'legal.terms')->name('legal.terms');
+Route::view('/privacy', 'legal.privacy')->name('legal.privacy');
+Route::view('/aup', 'legal.aup')->name('legal.aup');
+
 // --- Auth -----------------------------------------------------------------
 Route::middleware('guest')->group(function () {
     Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
@@ -154,6 +188,14 @@ Route::middleware(['auth', 'staff'])->prefix('admin')->name('admin.')->group(fun
     Route::post('/system/jobs/{uuid}/retry', [$A.'SystemController', 'retryJob'])->name('system.retry');
     Route::delete('/system/jobs/{uuid}', [$A.'SystemController', 'deleteJob'])->name('system.delete');
     Route::post('/system/breaker/{relay}/reset', [$A.'SystemController', 'resetBreaker'])->name('system.breaker');
+
+    Route::get('/tools', [$A.'ToolsController', 'index'])->name('tools.index');
+    Route::post('/tools/connect', [$A.'ToolsController', 'connect'])->middleware('throttle:10,1')->name('tools.connect');
+    Route::post('/tools/send', [$A.'ToolsController', 'send'])->middleware('throttle:5,1')->name('tools.send');
+    Route::post('/tools/dns', [$A.'ToolsController', 'dns'])->middleware('throttle:10,1')->name('tools.dns');
+
+    Route::get('/branding', [$A.'BrandingController', 'index'])->name('branding.index');
+    Route::post('/branding', [$A.'BrandingController', 'update'])->name('branding.update');
 
     Route::get('/audit', $A.'AuditController')->name('audit');
     Route::get('/settings', [$A.'SettingsController', 'index'])->name('settings.index');

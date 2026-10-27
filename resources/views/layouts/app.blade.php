@@ -6,8 +6,9 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <meta name="robots" content="noindex">
     <title>@yield('title', 'Console') — Postivo</title>
-    <link rel="icon" type="image/png" href="{{ asset('img/favicon.png') }}">
+    <link rel="icon" type="image/png" href="{{ \App\Support\Brand::favicon() }}">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
+    {!! \App\Support\Brand::headStyle() !!}
 </head>
 <body x-data="{ nav: false }" @keydown.escape.window="nav = false">
 @php
@@ -31,7 +32,7 @@
     <aside :class="nav ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'"
            class="fixed inset-y-0 left-0 z-40 flex w-[232px] flex-col border-r border-line bg-white transition-transform lg:sticky lg:top-0 lg:h-screen">
         <a href="{{ route('console.dashboard') }}" class="flex h-16 items-center border-b border-line px-5">
-            <img src="{{ asset('img/logo.png') }}" alt="Postivo" class="h-7 w-auto">
+            <img src="{{ \App\Support\Brand::logo() }}" alt="{{ \App\Support\Brand::name() }}" class="h-7 w-auto">
         </a>
         <nav class="flex-1 space-y-0.5 overflow-y-auto py-4" aria-label="Utama">
             @foreach($links as [$route, $label, $icon, $pattern])
@@ -50,14 +51,14 @@
                 <a href="{{ route('docs') }}" class="btn-ghost btn-sm text-muted"><x-icon name="book" class="size-3.5" />Docs</a>
                 @if(auth()->user()->isStaff() && ! session('impersonator_id'))<a href="{{ route('admin.dashboard') }}" class="btn-ghost btn-sm text-red-500">Admin</a>@endif
             </div>
-            <p class="mt-3 text-[10px] leading-snug text-muted">© {{ date('Y') }} postivo. All rights reserved. Created by postivo</p>
+            <p class="mt-3 text-[10px] leading-snug text-muted">{{ \App\Support\Brand::footer() }}</p>
         </div>
     </aside>
 
     <div class="min-w-0">
         <header class="flex h-16 items-center justify-between border-b border-line px-4 sm:px-6 lg:hidden">
             <button @click="nav = true" class="btn-ghost -ml-2 px-2" aria-label="Buka menu"><x-icon name="menu" class="size-5" /></button>
-            <img src="{{ asset('img/logo.png') }}" alt="Postivo" class="h-6 w-auto">
+            <img src="{{ \App\Support\Brand::logo() }}" alt="{{ \App\Support\Brand::name() }}" class="h-6 w-auto">
             <span class="w-9"></span>
         </header>
         <main id="main" class="mx-auto max-w-[1280px] px-4 py-6 sm:px-6">

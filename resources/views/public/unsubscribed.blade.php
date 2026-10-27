@@ -9,7 +9,7 @@
 </head>
 <body class="grid min-h-screen place-items-center px-4">
     <main class="w-full max-w-md border border-line p-8">
-        <img src="{{ asset('img/logo.png') }}" alt="Postivo" class="mb-6 h-8 w-auto">
+        <img src="{{ \App\Support\Brand::logo() }}" alt="Postivo" class="mb-6 h-8 w-auto">
         @if($done)
             <h1 class="text-xl font-semibold">Anda telah berhenti berlangganan.</h1>
             <p class="mt-2 text-sm text-muted">Alamat ini tidak akan menerima email lagi dari pengirim ini.</p>

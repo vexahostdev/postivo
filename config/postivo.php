@@ -24,6 +24,9 @@ return [
 
     'support_email' => env('POSTIVO_SUPPORT_EMAIL', 'support@postivo.my.id'),
 
+    // Content-Security-Policy: off | report | enforce.
+    'csp' => env('POSTIVO_CSP', 'report'),
+
     // Harga PLACEHOLDER (keputusan terbuka PRD §14.2) — ubah di sini, checkout & landing otomatis mengikuti.
     // daily_limit null = tanpa batas harian. Harga dalam rupiah per bulan.
     'plans' => [

@@ -34,6 +34,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'staff' => \App\Http\Middleware\EnsureStaff::class,
         ]);
         $middleware->api(prepend: [SetRequestId::class]);
+        $middleware->web(append: [\App\Http\Middleware\SecurityHeaders::class]);
         $middleware->redirectGuestsTo(fn () => route('login'));
         $middleware->redirectUsersTo(fn () => route('console.dashboard'));
         $middleware->trustProxies(at: '*');

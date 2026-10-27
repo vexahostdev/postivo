@@ -6,8 +6,9 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <meta name="robots" content="noindex,nofollow">
     <title>@yield('title', 'Admin') — Postivo Admin</title>
-    <link rel="icon" type="image/png" href="{{ asset('img/favicon.png') }}">
+    <link rel="icon" type="image/png" href="{{ \App\Support\Brand::favicon() }}">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
+    {!! \App\Support\Brand::headStyle() !!}
 </head>
 <body x-data="{ nav: false }" @keydown.escape.window="nav = false">
 @php
@@ -17,7 +18,7 @@
         'Pelanggan' => [['admin.organizations.index', 'Organisasi', 'globe', 'admin.organizations.*'], ['admin.users.index', 'Pengguna & staf', 'key', 'admin.users.*'], ['admin.domains.index', 'Domain', 'globe', 'admin.domains.*'], ['admin.emails.index', 'Email', 'mail', 'admin.emails.*']],
         'Keuangan' => [['admin.billing.index', 'Order & pembayaran', 'card', 'admin.billing.*'], ['admin.plans.index', 'Plan & harga', 'card', 'admin.plans.*']],
         'Kontrol' => [['admin.blocklist.index', 'Blocklist global', 'ban', 'admin.blocklist.*'], ['admin.suppressions.index', 'Suppression', 'ban', 'admin.suppressions.*']],
-        'Sistem' => [['admin.system.index', 'Kesehatan sistem', 'refresh', 'admin.system.*'], ['admin.audit', 'Log audit', 'book', 'admin.audit'], ['admin.settings.index', 'Pengaturan', 'settings', 'admin.settings.*'], ['admin.security', 'Keamanan saya', 'key', 'admin.security*']],
+        'Sistem' => [['admin.system.index', 'Kesehatan sistem', 'refresh', 'admin.system.*'], ['admin.tools.index', 'Alat & diagnostik', 'refresh', 'admin.tools.*'], ['admin.audit', 'Log audit', 'book', 'admin.audit'], ['admin.branding.index', 'Branding', 'settings', 'admin.branding.*'], ['admin.settings.index', 'Pengaturan', 'settings', 'admin.settings.*'], ['admin.security', 'Keamanan saya', 'key', 'admin.security*']],
     ];
 @endphp
 <a href="#main" class="sr-only focus:not-sr-only focus:fixed focus:left-3 focus:top-3 focus:z-[60] focus:border focus:border-red-500 focus:bg-white focus:px-3 focus:py-2">Lewati ke konten</a>
@@ -29,7 +30,7 @@
     <aside :class="nav ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'"
            class="fixed inset-y-0 left-0 z-40 flex w-[232px] flex-col border-r border-line bg-white transition-transform lg:sticky lg:top-0 lg:h-screen">
         <a href="{{ route('admin.dashboard') }}" class="flex h-16 items-center gap-3 border-b border-line px-5">
-            <img src="{{ asset('img/logo.png') }}" alt="Postivo" class="h-7 w-auto">
+            <img src="{{ \App\Support\Brand::logo() }}" alt="{{ \App\Support\Brand::name() }}" class="h-7 w-auto">
             <span class="border border-red-500 px-1.5 py-0.5 font-mono text-[10px] font-bold uppercase tracking-widest text-red-500">Admin</span>
         </a>
         <nav class="flex-1 overflow-y-auto py-3" aria-label="Admin">
@@ -52,14 +53,14 @@
                 </form>
                 <a href="{{ route('docs') }}" class="btn-ghost btn-sm text-muted"><x-icon name="book" class="size-3.5" />Docs</a>
             </div>
-            <p class="mt-3 text-[10px] leading-snug text-muted">© {{ date('Y') }} postivo. All rights reserved. Created by postivo</p>
+            <p class="mt-3 text-[10px] leading-snug text-muted">{{ \App\Support\Brand::footer() }}</p>
         </div>
     </aside>
 
     <div class="min-w-0">
         <header class="flex h-16 items-center justify-between border-b border-line px-4 sm:px-6 lg:hidden">
             <button @click="nav = true" class="btn-ghost -ml-2 px-2" aria-label="Buka menu"><x-icon name="menu" class="size-5" /></button>
-            <span class="flex items-center gap-2"><img src="{{ asset('img/logo.png') }}" alt="Postivo" class="h-6 w-auto"><span class="font-mono text-[10px] font-bold uppercase tracking-widest text-red-500">Admin</span></span>
+            <span class="flex items-center gap-2"><img src="{{ \App\Support\Brand::logo() }}" alt="{{ \App\Support\Brand::name() }}" class="h-6 w-auto"><span class="font-mono text-[10px] font-bold uppercase tracking-widest text-red-500">Admin</span></span>
             <span class="w-9"></span>
         </header>
         <main id="main" class="mx-auto max-w-[1320px] px-4 py-6 sm:px-6">

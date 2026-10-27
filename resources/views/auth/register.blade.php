@@ -26,6 +26,7 @@
             <label class="label" for="password_confirmation">Ulangi kata sandi</label>
             <input class="input" id="password_confirmation" name="password_confirmation" type="password" required autocomplete="new-password">
         </div>
+        <p class="mb-3 text-xs text-muted">Dengan mendaftar, Anda menyetujui <a class="underline" href="{{ route('legal.terms') }}" target="_blank">Syarat Layanan</a>, <a class="underline" href="{{ route('legal.privacy') }}" target="_blank">Kebijakan Privasi</a>, dan <a class="underline" href="{{ route('legal.aup') }}" target="_blank">Penggunaan yang Dapat Diterima</a>.</p>
         <button class="btn-primary w-full">Buat akun</button>
     </form>
 @endsection

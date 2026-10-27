@@ -18,6 +18,12 @@ class PlatformSettings
         'abuse_bounce_danger' => 5.0,
         'abuse_complaint_warn' => 0.1,
         'abuse_complaint_danger' => 0.3,
+        'brand_name' => '',
+        'brand_tagline' => '',
+        'brand_footer' => '',
+        'brand_accent' => '',
+        'brand_logo' => '',
+        'brand_favicon' => '',
     ];
 
     public static function all(): array

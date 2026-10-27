@@ -7,10 +7,11 @@
     <meta name="description" content="Send, track and debug every transactional email. REST API and SMTP relay with domain authentication, suppression and signed webhooks.">
     <meta property="og:title" content="Postivo — Transactional Email API & SMTP Relay">
     <meta property="og:description" content="Send, track and debug every transactional email.">
-    <meta property="og:image" content="{{ asset('img/logo.png') }}">
+    <meta property="og:image" content="{{ \App\Support\Brand::logo() }}">
     <meta name="theme-color" content="#FE0000">
-    <link rel="icon" type="image/png" href="{{ asset('img/favicon.png') }}">
+    <link rel="icon" type="image/png" href="{{ \App\Support\Brand::favicon() }}">
     @vite(['resources/css/landing.css', 'resources/js/landing.js'])
+    {!! \App\Support\Brand::headStyle() !!}
 </head>
 <body x-data="landing()" @keydown.escape.window="menu = false; modal = null">
 
@@ -18,7 +19,7 @@
 
 {{-- HEADER --}}
 <header class="flex w-full items-center justify-between px-3 pb-2 pt-3.5 sm:px-5">
-    <a href="#top" aria-label="Postivo home"><img src="{{ asset('img/logo.png') }}" alt="Postivo" class="h-6 w-auto"></a>
+    <a href="#top" aria-label="Postivo home"><img src="{{ \App\Support\Brand::logo() }}" alt="Postivo" class="h-6 w-auto"></a>
     <div class="flex items-center gap-2">
         <a href="{{ route('docs') }}" class="hidden text-[10px] font-semibold text-brand hover:underline sm:inline">Docs</a>
         <a href="{{ route('login') }}" class="hidden text-[10px] font-semibold text-brand hover:underline sm:inline">Sign in</a>
@@ -208,7 +209,7 @@
                 <svg viewBox="0 0 1000 245" class="block h-auto w-full"><text x="-6" y="236" fill="#FE0000" font-size="260" font-weight="900" font-family="Inter Variable, Inter, sans-serif" letter-spacing="-14.3">POSTIVO</text></svg>
                 <span class="absolute bottom-[9%] left-[1.1%] rounded-full border border-brand/30 bg-white/70 px-3 py-[3px] font-mono text-[10px] text-brand/60 sm:text-[13px]">250 OK</span>
             </div>
-            <p class="mt-2 text-[10px] text-brand">© {{ date('Y') }} postivo. All rights reserved. Created by postivo · <a class="underline" href="mailto:{{ config('postivo.support_email') }}">{{ config('postivo.support_email') }}</a></p>
+            <p class="mt-2 text-[10px] text-brand">{{ \App\Support\Brand::footer() }} · <a class="underline" href="mailto:{{ config('postivo.support_email') }}">{{ config('postivo.support_email') }}</a> · <a class="underline" href="{{ route('legal.terms') }}">Syarat</a> · <a class="underline" href="{{ route('legal.privacy') }}">Privasi</a> · <a class="underline" href="{{ route('legal.aup') }}">AUP</a></p>
         </div>
         <div class="hidden md:block"></div>
     </div>
@@ -262,7 +263,7 @@
             <a class="text-[11px] underline opacity-90" href="mailto:support@postivo.my.id">support@postivo.my.id</a>
         </div>
     </nav>
-    <div class="flex justify-between border-t border-white/20 pt-4 text-[10px] opacity-75"><span>© {{ date('Y') }} postivo. All rights reserved. Created by postivo</span><span>Jakarta, Indonesia</span></div>
+    <div class="flex justify-between border-t border-white/20 pt-4 text-[10px] opacity-75"><span>{{ \App\Support\Brand::footer() }}</span><span>Jakarta, Indonesia</span></div>
 </div>
 </body>
 </html>

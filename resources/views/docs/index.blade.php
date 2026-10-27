@@ -5,8 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Dokumentasi — Postivo</title>
     <meta name="description" content="Dokumentasi teknis Postivo: REST API, SMTP relay, autentikasi domain, webhook, dan penagihan.">
-    <link rel="icon" type="image/png" href="{{ asset('img/favicon.png') }}">
+    <link rel="icon" type="image/png" href="{{ \App\Support\Brand::favicon() }}">
     @vite(['resources/css/app.css', 'resources/js/docs.js'])
+    {!! \App\Support\Brand::headStyle() !!}
 </head>
 @php
     $nav = [
@@ -28,7 +29,7 @@
 <header class="sticky top-0 z-40 border-b border-line bg-white/95 backdrop-blur">
     <div class="mx-auto flex h-14 max-w-[1400px] items-center gap-4 px-4 sm:px-6">
         <button class="btn-ghost -ml-2 px-2 lg:hidden" @click="nav = !nav" aria-label="Menu dokumentasi"><x-icon name="menu" class="size-5" /></button>
-        <a href="{{ route('landing') }}" class="flex items-center gap-3"><img src="{{ asset('img/logo.png') }}" alt="Postivo" class="h-6 w-auto"><span class="hidden border-l border-line pl-3 font-mono text-[11px] uppercase tracking-wider text-muted sm:inline">Docs · v1</span></a>
+        <a href="{{ route('landing') }}" class="flex items-center gap-3"><img src="{{ \App\Support\Brand::logo() }}" alt="Postivo" class="h-6 w-auto"><span class="hidden border-l border-line pl-3 font-mono text-[11px] uppercase tracking-wider text-muted sm:inline">Docs · v1</span></a>
         <button @click="openSearch()" class="ml-auto flex w-full max-w-sm items-center gap-2 border border-line px-3 py-1.5 text-left text-sm text-muted hover:border-ink sm:ml-6">
             <x-icon name="search" class="size-4" /><span class="flex-1 truncate">Cari dokumentasi atau endpoint API…</span><kbd class="hidden border border-line px-1.5 font-mono text-[10px] sm:inline">Ctrl K</kbd>
         </button>
@@ -89,7 +90,7 @@
 
 <footer class="border-t border-line">
     <div class="mx-auto flex max-w-[1400px] flex-wrap items-center justify-between gap-3 px-4 py-6 text-xs text-muted sm:px-6">
-        <p>© {{ date('Y') }} postivo. All rights reserved. Created by postivo</p>
+        <p>{{ \App\Support\Brand::footer() }}</p>
         <p class="font-mono">Ctrl + K cari · ESC tutup</p>
     </div>
 </footer>

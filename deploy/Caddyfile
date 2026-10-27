@@ -1,0 +1,26 @@
+# Caddy: TLS otomatis (Let's Encrypt) untuk semua host Postivo + reverse proxy ke php-fpm.
+# APP_DOMAIN mis. postivo.my.id (di-set lewat docker compose).
+(laravel) {
+	root * /var/www/html/public
+	encode zstd gzip
+	php_fastcgi app:9000
+	file_server
+	header -Server
+}
+
+# Publik. /internal/* hanya untuk smtp-engine (jaringan Docker), tidak boleh terbuka dari internet.
+{$APP_DOMAIN}, api.{$APP_DOMAIN}, trk.{$APP_DOMAIN} {
+	@internal path /internal/*
+	respond @internal 404
+	import laravel
+}
+
+# Host SMTP: Caddy hanya dipakai untuk mendapatkan & memperbarui sertifikat TLS yang dibaca smtp-engine.
+smtp.{$APP_DOMAIN} {
+	respond "SMTP ingress" 200
+}
+
+# Internal (smtp-engine → Laravel), tidak dipublikasikan.
+http://web:80 {
+	import laravel
+}
