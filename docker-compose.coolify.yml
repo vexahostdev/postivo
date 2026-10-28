@@ -96,7 +96,7 @@ services:
 
   queue:
     <<: *app
-    command: php artisan queue:work redis --queue=default --sleep=1 --tries=3 --max-time=3600 --memory=256
+    command: php artisan queue:work redis --queue=postivo_high,postivo_default,postivo_webhooks,default --sleep=1 --tries=3 --max-time=3600 --memory=256
     depends_on:
       app: { condition: service_healthy }
       mysql: { condition: service_healthy }

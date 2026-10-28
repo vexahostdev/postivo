@@ -67,6 +67,9 @@ return new class extends Migration
             Schema::dropIfExists($tbl);
         }
         Schema::table('organizations', fn (Blueprint $t) => $t->dropColumn(['internal_notes', 'suspended_at']));
-        Schema::table('users', fn (Blueprint $t) => $t->dropColumn(['platform_role', 'disabled_at', 'two_factor_secret', 'two_factor_confirmed_at']));
+        Schema::table('users', function (Blueprint $t) {
+            $t->dropIndex(['platform_role']);
+            $t->dropColumn(['platform_role', 'disabled_at', 'two_factor_secret', 'two_factor_confirmed_at']);
+        });
     }
 };

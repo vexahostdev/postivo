@@ -132,6 +132,7 @@ class PlatformToolsTest extends TestCase
     public function test_send_test_validates_recipient_and_is_staff_only(): void
     {
         $this->actingAs($this->staff())->post('/admin/tools/send', ['relay' => 'SYSTEM', 'to' => 'bukan-email'])->assertSessionHasErrors('to');
+        $this->flushSession();
         $this->actingAs($this->staff('finance'))->post('/admin/tools/send', ['relay' => 'SYSTEM', 'to' => 'a@b.test'])->assertForbidden();
     }
 }

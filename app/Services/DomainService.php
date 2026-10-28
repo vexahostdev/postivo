@@ -47,7 +47,7 @@ class DomainService
         // Windows tanpa OPENSSL_CONF: coba openssl.cnf bawaan PHP/Git.
         if (! $res) {
             $candidates = array_filter([
-                env('POSTIVO_OPENSSL_CONF'),
+                config('postivo.dns.openssl_conf'),
                 dirname(PHP_BINARY).'/extras/openssl/openssl.cnf',
                 dirname(PHP_BINARY).'/extras/ssl/openssl.cnf',
                 'C:/Program Files/Git/mingw64/etc/ssl/openssl.cnf',

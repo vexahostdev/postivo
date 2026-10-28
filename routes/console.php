@@ -1,7 +1,10 @@
 <?php
 
+use App\Enums\DispatchStatus;
+use App\Jobs\DispatchOutboundEmailJob;
 use App\Models\Domain;
 use App\Models\Email;
+use App\Models\EmailDispatch;
 use App\Services\DnsAuditorService;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
@@ -9,9 +12,15 @@ use Illuminate\Support\Facades\Schedule;
 
 Artisan::command('postivo:audit-domains', function (DnsAuditorService $auditor) {
     $n = 0;
-    Domain::withoutGlobalScopes()->whereIn('status', ['PENDING', 'ACTIVE', 'FAILED'])->with('records')->each(function (Domain $d) use ($auditor, &$n) {
-        $auditor->audit($d);
-        $n++;
+    Domain::withoutGlobalScope('organization')->whereIn('status', ['PENDING', 'ACTIVE', 'FAILED'])->with('records')->each(function (Domain $d) use ($auditor, &$n) {
+        try {
+            $auditor->audit($d);
+            $n++;
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            if ($e->getModel() !== Domain::class || Domain::withoutGlobalScope('organization')->whereKey($d->id)->exists()) {
+                throw $e;
+            }
+        }
     });
     $this->info("Audited {$n} domain(s).");
 })->purpose('Audit ulang DNS semua domain');
@@ -27,6 +36,31 @@ Artisan::command('postivo:prune', function () {
 
 Schedule::command('postivo:audit-domains')->everyFifteenMinutes()->withoutOverlapping();
 Schedule::command('postivo:prune')->dailyAt('03:00');
+
+// Dispatch macet (worker mati di tengah jalan / job hilang) dijadwalkan ulang.
+Artisan::command('postivo:requeue-stuck', function () {
+    $cutoff = now()->subMinutes(15);
+    $stuck = EmailDispatch::withoutGlobalScopes()
+        ->whereIn('status', ['QUEUED', 'DEFERRED', 'SENDING'])
+        ->where('updated_at', '<', $cutoff)
+        ->where(fn ($q) => $q->whereNull('next_attempt_at')->orWhere('next_attempt_at', '<=', now()))
+        // Email terjadwal belum waktunya dikirim: biarkan delay aslinya.
+        ->whereDoesntHave('email', fn ($q) => $q->withoutGlobalScopes()->where('scheduled_at', '>', now()))
+        ->limit(500)
+        ->get();
+
+    foreach ($stuck as $d) {
+        if ($d->status === DispatchStatus::SENDING) {
+            EmailDispatch::withoutGlobalScopes()->whereKey($d->id)->where('status', 'SENDING')
+                ->update(['status' => 'QUEUED', 'status_rank' => 0, 'updated_at' => now()]);
+        }
+        DispatchOutboundEmailJob::dispatch($d->id)->onQueue('postivo_default');
+    }
+
+    $this->info('Requeued '.$stuck->count().' stuck dispatch(es).');
+})->purpose('Jadwalkan ulang dispatch yang macet di QUEUED/DEFERRED/SENDING');
+
+Schedule::command('postivo:requeue-stuck')->everyFiveMinutes()->withoutOverlapping();
 
 Artisan::command('postivo:billing-sweep', function (App\Services\BillingService $billing) {
     $r = $billing->sweepExpirations();
@@ -88,3 +122,31 @@ Artisan::command('postivo:admin:create {--email=} {--name=} {--password=}', func
 
     return 0;
 })->purpose('Buat/perbarui akun superadmin dari ADMIN_EMAIL & ADMIN_PASSWORD');
+
+Artisan::command('postivo:registration {action=status : status | lock | unlock}', function () {
+    $action = strtolower((string) $this->argument('action'));
+    $current = (bool) App\Services\PlatformSettings::get('signups_open', true);
+
+    if ($action === 'status') {
+        $statusStr = $current ? '<fg=green>TERBUKA (OPEN)</>' : '<fg=red>DIKUNCI (LOCKED)</>';
+        $this->line("Status pendaftaran akun saat ini: {$statusStr}");
+        return 0;
+    }
+
+    if ($action === 'lock') {
+        App\Services\PlatformSettings::set('signups_open', false);
+        App\Services\AdminAudit::system('settings.signups_locked', 'settings', null, null, 'CLI command postivo:registration lock', ['signups_open' => ['from' => $current, 'to' => false]]);
+        $this->info('Pendaftaran akun baru telah DIKUNCI. User umum tidak dapat mendaftar.');
+        return 0;
+    }
+
+    if ($action === 'unlock') {
+        App\Services\PlatformSettings::set('signups_open', true);
+        App\Services\AdminAudit::system('settings.signups_opened', 'settings', null, null, 'CLI command postivo:registration unlock', ['signups_open' => ['from' => $current, 'to' => true]]);
+        $this->info('Pendaftaran akun baru telah DIBUKA kembali.');
+        return 0;
+    }
+
+    $this->error("Aksi tidak valid: '{$action}'. Gunakan salah satu dari: status, lock, unlock.");
+    return 1;
+})->purpose('Periksa, kunci, atau buka pendaftaran akun baru');

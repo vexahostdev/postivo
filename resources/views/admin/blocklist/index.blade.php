@@ -15,7 +15,7 @@
         <thead><tr><th class="th">Pola</th><th class="th">Alasan</th><th class="th">Ditambahkan</th><th class="th"></th></tr></thead>
         <tbody>@forelse($items as $i)
             <tr><td class="td mono font-bold">{{ $i->pattern }}</td><td class="td">{{ $i->reason }}</td><td class="td mono text-muted">{{ \Illuminate\Support\Carbon::parse($i->created_at)->diffForHumans() }}</td>
-                <td class="td text-right">@if($can)<form method="POST" action="{{ route('admin.blocklist.destroy', $i->id) }}" onsubmit="return confirm('Hapus dari blocklist?')">@csrf @method('DELETE')<button class="btn-ghost btn-sm">Hapus</button></form>@endif</td></tr>
+                <td class="td text-right">@if($can)<form method="POST" action="{{ route('admin.blocklist.destroy', $i->id) }}" data-confirm="Hapus dari blocklist?">@csrf @method('DELETE')<button class="btn-ghost btn-sm">Hapus</button></form>@endif</td></tr>
         @empty<tr><td class="td text-muted" colspan="4">Blocklist kosong.</td></tr>@endforelse</tbody>
     </table>
 </div>

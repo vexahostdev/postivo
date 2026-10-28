@@ -45,4 +45,29 @@ class SettingsController extends AdminController
 
         return back()->with('status', 'Pengaturan platform disimpan.');
     }
+
+    /** Toggle cepat untuk membuka/mengunci pendaftaran akun baru dari admin panel. */
+    public function toggleSignups(Request $request): RedirectResponse
+    {
+        $this->need('settings.manage');
+        $reason = $request->input('reason') ? trim((string) $request->input('reason')) : 'Toggle status pendaftaran oleh superadmin';
+        $current = (bool) PlatformSettings::get('signups_open', true);
+        $new = ! $current;
+
+        PlatformSettings::set('signups_open', $new);
+        AdminAudit::log(
+            $new ? 'settings.signups_opened' : 'settings.signups_locked',
+            'settings',
+            null,
+            null,
+            $reason,
+            ['signups_open' => ['from' => $current, 'to' => $new]]
+        );
+
+        $msg = $new
+            ? 'Pendaftaran akun baru telah DIBUKA kembali.'
+            : 'Pendaftaran akun baru telah DIKUNCI. Pengguna luar tidak bisa mendaftar akun baru.';
+
+        return back()->with('status', $msg);
+    }
 }

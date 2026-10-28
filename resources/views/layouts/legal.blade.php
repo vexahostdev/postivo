@@ -12,7 +12,7 @@
 <header class="border-b border-line">
     <div class="mx-auto flex h-16 max-w-3xl items-center justify-between px-4 sm:px-6">
         <a href="{{ route('landing') }}"><img src="{{ \App\Support\Brand::logo() }}" alt="{{ \App\Support\Brand::name() }}" class="h-7 w-auto"></a>
-        <a href="{{ route('login') }}" class="text-sm text-muted hover:text-ink">Masuk</a>
+        <a href="{{ route('login') }}" class="inline-flex min-h-9 items-center text-sm text-muted hover:text-ink">Masuk</a>
     </div>
 </header>
 <main class="mx-auto max-w-3xl px-4 py-10 sm:px-6">
@@ -26,10 +26,10 @@
 <footer class="border-t border-line">
     <div class="mx-auto flex max-w-3xl flex-wrap items-center justify-between gap-3 px-4 py-6 text-xs text-muted sm:px-6">
         <p>{{ \App\Support\Brand::footer() }}</p>
-        <nav class="flex gap-4" aria-label="Legal">
-            <a class="hover:text-ink" href="{{ route('legal.terms') }}">Syarat Layanan</a>
-            <a class="hover:text-ink" href="{{ route('legal.privacy') }}">Kebijakan Privasi</a>
-            <a class="hover:text-ink" href="{{ route('legal.aup') }}">Penggunaan yang Dapat Diterima</a>
+        <nav class="flex flex-wrap gap-x-4 gap-y-1" aria-label="Legal">
+            <a class="inline-flex min-h-8 items-center hover:text-ink" href="{{ route('legal.terms') }}">Syarat Layanan</a>
+            <a class="inline-flex min-h-8 items-center hover:text-ink" href="{{ route('legal.privacy') }}">Kebijakan Privasi</a>
+            <a class="inline-flex min-h-8 items-center hover:text-ink" href="{{ route('legal.aup') }}">Penggunaan yang Dapat Diterima</a>
         </nav>
     </div>
 </footer>

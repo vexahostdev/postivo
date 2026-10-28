@@ -6,20 +6,26 @@ use App\Models\EmailDispatch;
 use App\Models\Organization;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Throwable;
 
 class QuotaService
 {
-    /** Kembalikan null bila boleh, atau pesan alasan bila kuota habis. */
+    /** Caller must hold the Organization row lock through check, reservation and dispatch inserts. */
     public function check(Organization $org, int $count): ?string
     {
         $period = now()->format('Y-m');
-        $used = (int) DB::table('usage_counters')->where('organization_id', $org->id)->where('period', $period)->value('sent');
+        DB::table('usage_counters')->insertOrIgnore([['organization_id' => $org->id, 'period' => $period, 'updated_at' => now()]]);
+        // Lock an existing row, using current rather than snapshot quota usage.
+        $used = (int) DB::table('usage_counters')->where('organization_id', $org->id)->where('period', $period)
+            ->lockForUpdate()->value('sent');
         if ($used + $count > $org->monthly_quota) {
             return 'Monthly quota of '.number_format($org->monthly_quota).' emails exceeded.';
         }
         if ($org->daily_limit !== null) {
+            // Select rows rather than COUNT ... FOR UPDATE (not portable locking semantics).
             $today = EmailDispatch::withoutGlobalScopes()->where('organization_id', $org->id)
-                ->where('status', '!=', 'SUPPRESSED')->where('created_at', '>=', now()->startOfDay())->count();
+                ->where('status', '!=', 'SUPPRESSED')->where('created_at', '>=', now()->startOfDay())
+                ->orderBy('id')->lockForUpdate()->get(['id'])->count();
             if ($today + $count > $org->daily_limit) {
                 return 'Daily limit of '.number_format($org->daily_limit).' emails exceeded.';
             }
@@ -36,7 +42,13 @@ class QuotaService
             ->update([$column => DB::raw("$column + $n"), 'updated_at' => now()]);
 
         if ($column === 'sent') {
-            $this->warnIfNeeded($orgId, $period);
+            DB::afterCommit(function () use ($orgId, $period) {
+                try {
+                    $this->warnIfNeeded($orgId, $period);
+                } catch (Throwable $e) {
+                    report($e);
+                }
+            });
         }
     }
 

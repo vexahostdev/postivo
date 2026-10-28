@@ -28,7 +28,7 @@
     </div>
 @endunless
 
-<div class="grid gap-px border border-line bg-line sm:grid-cols-2 lg:grid-cols-4">
+<div class="grid grid-cols-1 gap-px border border-line bg-line sm:grid-cols-2 lg:grid-cols-4">
     @foreach($cards as [$label, $value, $tone])
         <div class="bg-white p-5">
             <p class="kicker">{{ $label }}</p>
@@ -37,11 +37,11 @@
     @endforeach
 </div>
 
-<div class="mt-6 grid gap-6 lg:grid-cols-3">
+<div class="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-3">
     <section class="card lg:col-span-2">
         <div class="flex items-center justify-between border-b border-line px-5 py-3"><h2 class="kicker">Aktivitas 14 hari</h2></div>
         <div class="p-5" x-data="sendChart('{{ route('console.chart') }}')">
-            <div x-show="!empty" class="h-64"><canvas x-ref="canvas" aria-label="Grafik email delivered dan bounced per hari" role="img"></canvas></div>
+            <div x-cloak x-show="!empty" class="h-64"><canvas x-ref="canvas" aria-label="Grafik email delivered dan bounced per hari" role="img"></canvas></div>
             <p x-cloak x-show="empty" class="py-16 text-center text-sm text-muted">Belum ada aktivitas. Kirim email pertama untuk melihat grafik.</p>
         </div>
     </section>
@@ -58,7 +58,7 @@
     </section>
 </div>
 
-<div class="mt-6 grid gap-6 lg:grid-cols-3">
+<div class="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-3">
     <section class="card lg:col-span-2">
         <div class="flex items-center justify-between border-b border-line px-5 py-3">
             <h2 class="kicker">Email terbaru</h2>
@@ -80,7 +80,7 @@
         @endforelse
     </section>
 
-    <section class="card" x-data="{ tab: 'curl' }">
+    <section class="card">
         <div class="border-b border-line px-5 py-3"><h2 class="kicker">Kirim lewat API</h2></div>
         <div class="p-5">
             <pre class="mono overflow-x-auto border border-line bg-paper p-3 leading-relaxed">curl {{ url('/v1/emails') }} \

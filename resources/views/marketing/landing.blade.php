@@ -1,3 +1,47 @@
+@php
+    $snippets = [
+        'curl' => <<<'CURL'
+            curl https://api.postivo.my.id/v1/emails \
+              -H "Authorization: Bearer $POSTIVO_API_KEY" \
+              -H "Idempotency-Key: otp-8812" \
+              -H "Content-Type: application/json" \
+              -d '{
+                "from": "Acme <noreply@mail.acme.com>",
+                "to": ["user@example.com"],
+                "subject": "Your verification code",
+                "html": "<p>Code: <b>123456</b></p>"
+              }'
+            CURL,
+        'node' => <<<'NODE'
+            const res = await fetch('https://api.postivo.my.id/v1/emails', {
+              method: 'POST',
+              headers: {
+                Authorization: `Bearer ${process.env.POSTIVO_API_KEY}`,
+                'Idempotency-Key': 'otp-8812',
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                from: 'Acme <noreply@mail.acme.com>',
+                to: ['user@example.com'],
+                subject: 'Your verification code',
+                html: '<p>Code: <b>123456</b></p>',
+              }),
+            });
+            console.log(res.status, await res.json()); // 202
+            NODE,
+        'php' => <<<'PHP'
+            $res = Http::withToken(env('POSTIVO_API_KEY'))
+                ->withHeaders(['Idempotency-Key' => 'otp-8812'])
+                ->post('https://api.postivo.my.id/v1/emails', [
+                    'from'    => 'Acme <noreply@mail.acme.com>',
+                    'to'      => ['user@example.com'],
+                    'subject' => 'Your verification code',
+                    'html'    => '<p>Code: <b>123456</b></p>',
+                ]);
+            $res->status(); // 202
+            PHP,
+    ];
+@endphp
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -24,7 +68,7 @@
         <a href="{{ route('docs') }}" class="hidden text-[10px] font-semibold text-brand hover:underline sm:inline">Docs</a>
         <a href="{{ route('login') }}" class="hidden text-[10px] font-semibold text-brand hover:underline sm:inline">Sign in</a>
         <button @click="menu = true" aria-haspopup="dialog" :aria-expanded="menu"
-                class="rounded-full border border-brand px-[13px] py-[3px] text-[10px] font-bold text-brand transition-colors hover:bg-brand hover:text-white">Menu</button>
+                class="min-h-9 rounded-full border border-brand px-4 py-1.5 text-[10px] font-bold text-brand transition-colors hover:bg-brand hover:text-white">Menu</button>
     </div>
 </header>
 
@@ -41,7 +85,7 @@
                 <text x="500" y="190" text-anchor="middle" fill="#FE0000" font-size="210" font-weight="900" font-family="Inter Variable, Inter, sans-serif" letter-spacing="-13.6">POSTIVO</text>
             </svg>
 
-            <div class="mt-4 grid gap-6 sm:mt-5 lg:grid-cols-12 lg:gap-8">
+            <div class="mt-4 grid grid-cols-1 gap-6 sm:mt-5 lg:grid-cols-12 lg:gap-8">
                 <div class="lg:col-span-5">
                     <h1 class="text-[17px] font-semibold leading-[1.2] tracking-[-0.025em] text-brand sm:text-[19px]">
                         Transactional email API and SMTP relay for developers — send, track and debug every message.
@@ -58,15 +102,16 @@
                 <div class="hairline border lg:col-span-7">
                     <div class="hairline flex items-center justify-between border-b px-3 py-2">
                         <div class="flex gap-1" role="tablist" aria-label="Code example language">
-                            <template x-for="t in ['curl','node','php']" :key="t">
-                                <button role="tab" :aria-selected="tab === t" @click="tab = t"
-                                        class="px-2 py-0.5 font-mono text-[10px] uppercase tracking-wide"
-                                        :class="tab === t ? 'bg-brand text-white' : 'text-brand hover:bg-brand-50'" x-text="t"></button>
-                            </template>
+                            @foreach (['curl', 'node', 'php'] as $t)
+                                <button type="button" role="tab" aria-controls="code-example" :aria-selected="tab === '{{ $t }}'" @click="tab = '{{ $t }}'"
+                                        class="min-h-8 px-2.5 py-1 font-mono text-[10px] uppercase tracking-wide"
+                                        :class="tab === '{{ $t }}' ? 'bg-brand text-white' : 'text-brand hover:bg-brand-50'">{{ $t }}</button>
+                            @endforeach
                         </div>
-                        <button @click="copyCode()" class="font-mono text-[10px] uppercase tracking-wide text-brand hover:underline" x-text="copied ? 'Copied' : 'Copy'"></button>
+                        <button type="button" @click="copyCode()" class="-m-1 min-h-8 p-1 font-mono text-[10px] uppercase tracking-wide text-brand hover:underline"><span x-show="!copied">Copy</span><span x-cloak x-show="copied">Copied</span></button>
                     </div>
-                    <pre class="overflow-x-auto p-4 font-mono text-[11px] leading-[1.6] text-neutral-900" x-text="snippets[tab]" aria-label="Code example"></pre>
+                    <script type="application/json" id="landing-snippets">@json($snippets)</script>
+                    <pre id="code-example" role="tabpanel" class="overflow-x-auto p-4 font-mono text-[11px] leading-[1.6] text-neutral-900" x-text="snippets[tab]" aria-label="Code example">{{ $snippets['curl'] }}</pre>
                     <div class="hairline border-t bg-brand-50 px-4 py-2 font-mono text-[11px] text-brand">
                         <span class="font-bold">202 Accepted</span> · {"id":"0192f3a0-…","status":"queued"}
                     </div>
@@ -90,41 +135,41 @@
             <div class="grid w-full grid-cols-1 px-3 sm:px-5 md:grid-cols-[44px_1fr_44px] lg:grid-cols-[68px_1fr_68px]">
                 <div class="hidden md:block" aria-hidden="true"></div>
                 <div class="hairline border-b py-[18px]">
-                    <div class="grid items-stretch gap-5 lg:grid-cols-12 lg:gap-6">
-                        <button type="button" @click="modal = c" class="hairline group relative aspect-[16/9.15] w-full overflow-hidden border bg-white text-left lg:col-span-8" :aria-label="`Explore ${c.title}`">
-                            <div x-show="c.id === 'relay'" class="absolute inset-0 grid place-items-center p-6">
+                    <div class="grid grid-cols-1 items-stretch gap-5 lg:grid-cols-12 lg:gap-6">
+                        <button type="button" @click="modal = c" class="hairline group relative min-h-[245px] w-full overflow-hidden border bg-white text-left lg:aspect-[16/9.15] lg:min-h-0 lg:col-span-8" :aria-label="`Explore ${c.title}`">
+                            <div x-show="c.id === 'relay'" x-cloak class="grid grid-cols-1 place-items-center p-3 sm:p-4 lg:absolute lg:inset-0 lg:p-6">
                                 <div class="w-full max-w-[520px] font-mono text-[11px] text-neutral-900">
                                     <template x-for="(s, j) in pipeline" :key="j">
-                                        <div class="hairline flex items-center gap-3 border-b py-2.5 last:border-b-0">
+                                        <div class="hairline flex items-center gap-3 border-b py-2 sm:py-2.5 last:border-b-0">
                                             <span class="grid size-5 place-items-center border border-brand text-[9px] font-bold text-brand" x-text="j + 1"></span>
                                             <span x-text="s"></span>
                                         </div>
                                     </template>
                                 </div>
                             </div>
-                            <div x-show="c.id === 'auth'" class="absolute inset-0 grid place-items-center p-6">
-                                <table class="w-full max-w-[560px] text-left font-mono text-[10.5px]">
-                                    <thead><tr class="hairline border-b text-brand"><th class="py-1.5 pr-3">TYPE</th><th class="pr-3">HOST</th><th>STATUS</th></tr></thead>
+                            <div x-show="c.id === 'auth'" x-cloak class="grid grid-cols-1 place-items-center p-3 sm:p-4 lg:absolute lg:inset-0 lg:p-6">
+                                <table class="w-full max-w-[560px] text-left font-mono text-[9.5px] sm:text-[10.5px]">
+                                    <thead><tr class="hairline border-b text-brand"><th class="py-1.5 pr-2">TYPE</th><th class="min-w-[130px] pr-2">HOST</th><th>STATUS</th></tr></thead>
                                     <tbody>
                                         <template x-for="r in dns" :key="r[1]">
-                                            <tr class="hairline border-b border-opacity-30"><td class="py-2 pr-3 font-bold" x-text="r[0]"></td><td class="pr-3" x-text="r[1]"></td>
+                                            <tr class="hairline border-b border-red-500/30"><td class="py-2 pr-2 font-bold" x-text="r[0]"></td><td class="min-w-[130px] pr-2 break-all" x-text="r[1]"></td>
                                                 <td :class="r[2] === 'verified' ? 'text-ok' : 'text-warn'" x-text="(r[2] === 'verified' ? '✓ ' : '… ') + r[2]"></td></tr>
                                         </template>
                                     </tbody>
                                 </table>
                             </div>
-                            <div x-show="c.id === 'events'" class="absolute inset-0 grid place-items-center p-6">
+                            <div x-show="c.id === 'events'" x-cloak class="grid grid-cols-1 place-items-center p-3 sm:p-4 lg:absolute lg:inset-0 lg:p-6">
                                 <ol class="w-full max-w-[520px] font-mono text-[11px]">
                                     <template x-for="(e, j) in events" :key="j">
                                         <li class="hairline relative flex gap-4 border-l pb-4 pl-5 last:pb-0">
                                             <span class="absolute -left-[4px] top-1 size-[7px] rounded-full bg-brand"></span>
-                                            <span class="w-[74px] shrink-0 text-neutral-500" x-text="e[0]"></span>
-                                            <span><b x-text="e[1]"></b> <span class="text-neutral-600" x-text="e[2]"></span></span>
+                                            <span class="w-[64px] shrink-0 text-neutral-500 lg:w-[74px]" x-text="e[0]"></span>
+                                            <span class="min-w-0 break-all"><b x-text="e[1]"></b> <span class="text-neutral-600" x-text="e[2]"></span></span>
                                         </li>
                                     </template>
                                 </ol>
                             </div>
-                            <span class="absolute bottom-3 right-3 rounded-full bg-brand px-3 py-1 text-[10px] font-semibold text-white opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100">Explore ↗</span>
+                            <span class="absolute bottom-3 right-3 rounded-full bg-brand px-3 py-1 text-[10px] font-semibold text-white opacity-100 transition-opacity sm:opacity-0 group-hover:opacity-100 group-focus-visible:opacity-100">Explore ↗</span>
                         </button>
 
                         <div class="flex min-h-[140px] flex-col justify-between lg:col-span-4 lg:min-h-0">
@@ -134,7 +179,7 @@
                             </div>
                             <div class="flex items-end justify-between gap-4 pt-6">
                                 <ul class="space-y-px text-[10px] font-semibold leading-[1.22] text-brand"><template x-for="s in c.services" :key="s"><li x-text="s"></li></template></ul>
-                                <button @click="modal = c" class="shrink-0 rounded-full bg-brand px-[15px] py-[4.5px] text-[10px] font-semibold text-white transition-colors hover:bg-brand-dark">Explore</button>
+                                <button @click="modal = c" class="min-h-8 shrink-0 rounded-full bg-brand px-[15px] py-[4.5px] text-[10px] font-semibold text-white transition-colors hover:bg-brand-dark">Explore</button>
                             </div>
                         </div>
                     </div>
@@ -148,11 +193,11 @@
     <section id="infra" class="grid w-full grid-cols-1 px-3 sm:px-5 md:grid-cols-[44px_1fr_44px] lg:grid-cols-[68px_1fr_68px]" aria-label="Infrastructure">
         <div class="hidden md:block" aria-hidden="true"></div>
         <div>
-            <div class="hairline flex items-baseline justify-between gap-4 border-b py-3 sm:py-4">
+            <div class="hairline flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 border-b py-3 sm:py-4">
                 <h2 class="text-[40px] font-bold leading-[1.02] tracking-[-0.035em] text-brand sm:text-[56px] md:text-[64px]">Infrastructure</h2>
                 <span class="text-[11px] font-semibold text-brand">Jakarta · primary</span>
             </div>
-            <dl class="grid gap-px sm:grid-cols-2 lg:grid-cols-4">
+            <dl class="grid grid-cols-1 gap-px sm:grid-cols-2 lg:grid-cols-4">
                 <template x-for="f in facts" :key="f[0]">
                     <div class="hairline border-b py-4 sm:pr-4">
                         <dt class="text-[9px] font-bold uppercase tracking-wider text-brand" x-text="f[0]"></dt>
@@ -172,7 +217,7 @@
                 <h2 class="text-[40px] font-bold leading-[1.02] tracking-[-0.035em] text-brand sm:text-[56px] md:text-[64px]">Pricing</h2>
                 <span class="text-[11px] font-semibold text-brand">IDR · per bulan</span>
             </div>
-            <div class="grid sm:grid-cols-2 lg:grid-cols-4">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
                 @foreach(\App\Support\Plans::active() as $key => $p)
                     <div class="hairline flex flex-col border-b py-5 sm:pr-5">
                         <h3 class="text-[22px] font-bold tracking-[-0.03em] text-brand">{{ $p['name'] }}</h3>
@@ -216,7 +261,7 @@
 </footer>
 
 {{-- MODAL: EXPLORE --}}
-<div x-cloak x-show="modal" x-transition.opacity @click.self="modal = null" class="fixed inset-0 z-50 grid place-items-center bg-brand/20 p-4 backdrop-blur-sm sm:p-6">
+<div x-cloak x-show="modal" x-transition.opacity @click.self="modal = null" class="fixed inset-0 z-50 grid grid-cols-1 place-items-center bg-brand/20 p-4 backdrop-blur-sm sm:p-6">
     <div x-trap.noscroll="modal" role="dialog" aria-modal="true" :aria-label="modal && modal.title" class="hairline w-full max-w-3xl border bg-white">
         <template x-if="modal">
             <div>
@@ -224,12 +269,12 @@
                     <span class="text-[10px] font-bold uppercase tracking-[0.06em] text-brand" x-text="modal.kicker"></span>
                     <button @click="modal = null" class="rounded-full border border-brand px-3.5 py-1 text-[10px] font-bold text-brand transition-colors hover:bg-brand hover:text-white">Close ✕</button>
                 </div>
-                <div class="grid gap-6 p-6 sm:p-8 md:grid-cols-12">
+                <div class="grid grid-cols-1 gap-6 p-6 sm:p-8 md:grid-cols-12">
                     <div class="md:col-span-8">
                         <h3 class="text-2xl font-bold leading-none tracking-[-0.03em] text-brand sm:text-3xl" x-text="modal.title"></h3>
                         <p class="mt-1 text-xs font-semibold text-brand" x-text="modal.subtitle"></p>
                         <p class="mt-4 text-[13px] leading-relaxed text-neutral-700" x-text="modal.summary"></p>
-                        <ul class="mt-5 grid gap-1.5 border-t border-brand/20 pt-4 text-[11px] font-semibold sm:grid-cols-2">
+                        <ul class="mt-5 grid grid-cols-1 gap-1.5 border-t border-brand/20 pt-4 text-[11px] font-semibold sm:grid-cols-2">
                             <template x-for="d in modal.deliverables" :key="d"><li class="flex gap-1.5"><span class="text-brand">→</span><span x-text="d"></span></li></template>
                         </ul>
                     </div>
@@ -252,7 +297,7 @@
         <span class="text-xs font-bold tracking-tight">POSTIVO</span>
         <button @click="menu = false" class="rounded-full border border-white px-4 py-1 text-[10px] font-bold transition-colors hover:bg-white hover:text-brand">Close</button>
     </div>
-    <nav class="grid items-end gap-8 lg:grid-cols-12" aria-label="Menu">
+    <nav class="grid grid-cols-1 items-end gap-8 lg:grid-cols-12" aria-label="Menu">
         <ul class="space-y-2 lg:col-span-7">
             @foreach([['Home', '#top'], ['Capabilities', '#work'], ['Infrastructure', '#infra'], ['Pricing', '#harga'], ['Docs', route('docs')], ['Sign in', route('login')], ['Console', route('console.dashboard')]] as [$l, $h])
                 <li><a href="{{ $h }}" @click="menu = false" class="block text-4xl font-bold tracking-[-0.035em] transition-opacity hover:opacity-70 sm:text-6xl">{{ $l }}</a></li>

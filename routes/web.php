@@ -200,4 +200,5 @@ Route::middleware(['auth', 'staff'])->prefix('admin')->name('admin.')->group(fun
     Route::get('/audit', $A.'AuditController')->name('audit');
     Route::get('/settings', [$A.'SettingsController', 'index'])->name('settings.index');
     Route::post('/settings', [$A.'SettingsController', 'update'])->name('settings.update');
+    Route::post('/settings/toggle-signups', [$A.'SettingsController', 'toggleSignups'])->name('settings.toggle-signups');
 });

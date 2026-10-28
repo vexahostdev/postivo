@@ -16,11 +16,12 @@
 
 <div x-data="dnsAuditor('{{ route('console.domains.verify', $domain->id) }}', @js($initial))">
     <x-page-header :title="$domain->domain_name" sub="Pasang record berikut di penyedia DNS domain Anda.">
-        <span x-show="false"></span>
         @if($canWrite)
             <button type="button" class="btn-primary" @click="verify()" :disabled="busy || cooldown > 0">
                 <x-icon name="refresh" x-bind:class="busy && 'animate-spin'" />
-                <span x-text="busy ? 'Memeriksa…' : (cooldown > 0 ? `Tunggu ${cooldown}s` : 'Verifikasi sekarang')"></span>
+                <span x-show="!busy && cooldown <= 0">Verifikasi sekarang</span>
+                <span x-cloak x-show="busy">Memeriksa…</span>
+                <span x-cloak x-show="cooldown > 0" x-text="`Tunggu ${cooldown}s`"></span>
             </button>
         @endif
     </x-page-header>
@@ -28,8 +29,8 @@
     <div class="mb-4 flex flex-wrap items-center gap-3" aria-live="polite">
         <span class="kicker">Status</span>
         <span class="mono border px-1.5 py-0.5 uppercase"
-              :class="{ 'border-ok text-ok': status === 'ACTIVE', 'border-warn text-warn': status === 'PENDING', 'border-red-500 text-red-500': status === 'FAILED' || status === 'SUSPENDED' }" x-text="status"></span>
-        <span class="text-sm text-muted" x-text="message"></span>
+              :class="{ 'border-ok text-ok': status === 'ACTIVE', 'border-warn text-warn': status === 'PENDING', 'border-red-500 text-red-500': status === 'FAILED' || status === 'SUSPENDED' }">{{ $domain->status }}</span>
+        <span class="text-sm text-muted" x-cloak x-text="message"></span>
     </div>
 
     <p class="mb-4 text-sm text-muted">Domain menjadi <b class="text-ink">Active</b> bila DKIM, SPF, dan Return-Path lolos. DMARC dan Tracking opsional tetapi disarankan. Propagasi DNS dapat memakan waktu hingga beberapa jam.</p>
@@ -47,7 +48,7 @@
                           :class="r.verified ? 'border-ok text-ok' : (r.required ? 'border-warn text-warn' : 'border-line text-muted')"
                           x-text="r.verified ? '✓ Terverifikasi' : '… Belum terdeteksi'"></span>
                 </div>
-                <div class="grid gap-3 p-5 sm:grid-cols-[88px_1fr]">
+                <div class="grid grid-cols-1 gap-3 p-5 sm:grid-cols-[88px_1fr]">
                     <span class="kicker pt-1">Host</span>
                     <div class="flex items-center gap-2"><code class="mono flex-1 break-all border border-line bg-paper px-2.5 py-1.5" x-text="r.name"></code>
                         <button type="button" class="btn-outline btn-sm" @click="copy(r.name)" aria-label="Salin host"><x-icon name="copy" class="size-3.5" /></button></div>
@@ -79,7 +80,7 @@
 @endif
 
 @if($currentRole->atLeast(\App\Enums\MemberRole::ADMIN))
-<form method="POST" action="{{ route('console.domains.destroy', $domain->id) }}" class="mt-6" onsubmit="return confirm('Hapus domain {{ $domain->domain_name }}? Email baru dari domain ini akan ditolak.')">
+<form method="POST" action="{{ route('console.domains.destroy', $domain->id) }}" class="mt-6" data-confirm="Hapus domain {{ $domain->domain_name }}? Email baru dari domain ini akan ditolak.">
     @csrf @method('DELETE')
     <button class="btn-danger btn-sm"><x-icon name="trash" class="size-3.5" />Hapus domain</button>
 </form>

@@ -3,7 +3,7 @@
 @section('content')
 <a href="{{ route('admin.emails.index') }}" class="mono text-muted hover:underline">← Email</a>
 <x-page-header :title="$email->subject" :sub="'Ke '.$d->recipient.' · '.($org->name ?? '—')"><x-status-pill :status="$d->status" /></x-page-header>
-<div class="grid gap-6 lg:grid-cols-3" x-data="{ tab: 'text' }">
+<div class="grid grid-cols-1 gap-6 lg:grid-cols-3" x-data="{ tab: 'text' }">
     <div class="space-y-6 lg:col-span-2">
         <section class="card">
             <div class="flex gap-1 border-b border-line px-3 py-2">@foreach(['text' => 'Teks', 'raw' => 'Raw MIME'] as $k => $l)<button @click="tab = '{{ $k }}'" class="mono px-2.5 py-1 uppercase tracking-wide" :class="tab === '{{ $k }}' ? 'bg-red-500 text-white' : 'text-muted'">{{ $l }}</button>@endforeach</div>

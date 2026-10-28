@@ -36,7 +36,7 @@
 @if($can)
 <section class="card mb-6 p-5">
     <h2 class="kicker">Kirim email uji</h2>
-    <form method="POST" action="{{ route('admin.tools.send') }}" class="mt-4 grid gap-4 sm:grid-cols-[1fr_1fr_auto] sm:items-end">@csrf
+    <form method="POST" action="{{ route('admin.tools.send') }}" class="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-[1fr_1fr_auto] sm:items-end">@csrf
         <div><label class="label" for="tr">Lewat relay</label>
             <select class="input" id="tr" name="relay">@foreach($relays as $key => $r)<option value="{{ $key }}" @disabled(!$r['configured'])>{{ $labels[$key] }}</option>@endforeach</select></div>
         <div><label class="label" for="tt">Alamat tujuan</label><input class="input" id="tt" type="email" name="to" required value="{{ old('to', auth()->user()->email) }}">@error('to')<p class="err">{{ $message }}</p>@enderror</div>
@@ -54,7 +54,7 @@
     @if($dns)
         <p class="mt-2 text-xs text-muted">Dicek {{ $dns['at'] }} lewat DoH (Cloudflare, cadangan Google). Status ⚠ opsional tergantung relay yang dipakai.</p>
         <div class="mt-4 overflow-x-auto">
-            <table class="w-full text-left text-sm">
+            <table class="w-full min-w-[720px] text-left text-sm">
                 <thead><tr class="kicker border-b border-line"><th class="py-2 pr-3">Cek</th><th class="py-2 pr-3">Status</th><th class="py-2 pr-3">Ditemukan</th><th class="py-2">Saran</th></tr></thead>
                 <tbody class="divide-y divide-line align-top">
                 @foreach($dns['rows'] as $row)

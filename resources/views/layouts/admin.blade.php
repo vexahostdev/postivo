@@ -10,7 +10,7 @@
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     {!! \App\Support\Brand::headStyle() !!}
 </head>
-<body x-data="{ nav: false }" @keydown.escape.window="nav = false">
+<body x-data="{ nav: false, vw: window.innerWidth }" @resize.window.debounce.150="vw = window.innerWidth" @keydown.escape.window="nav = false">
 @php
     $me = auth()->user();
     $groups = [
@@ -27,8 +27,8 @@
     <div x-cloak x-show="nav" @click="nav = false" class="fixed inset-0 z-30 bg-ink/40 lg:hidden"></div>
 
     {{-- Sidebar: gaya sama dengan console pelanggan --}}
-    <aside :class="nav ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'"
-           class="fixed inset-y-0 left-0 z-40 flex w-[232px] flex-col border-r border-line bg-white transition-transform lg:sticky lg:top-0 lg:h-screen">
+    <aside id="sidebar" :class="nav ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'" :inert="!nav && vw < 1024"
+           class="fixed inset-y-0 left-0 z-40 flex w-[232px] -translate-x-full flex-col border-r border-line bg-white transition-transform lg:sticky lg:top-0 lg:h-screen lg:translate-x-0">
         <a href="{{ route('admin.dashboard') }}" class="flex h-16 items-center gap-3 border-b border-line px-5">
             <img src="{{ \App\Support\Brand::logo() }}" alt="{{ \App\Support\Brand::name() }}" class="h-7 w-auto">
             <span class="border border-red-500 px-1.5 py-0.5 font-mono text-[10px] font-bold uppercase tracking-widest text-red-500">Admin</span>
@@ -59,7 +59,7 @@
 
     <div class="min-w-0">
         <header class="flex h-16 items-center justify-between border-b border-line px-4 sm:px-6 lg:hidden">
-            <button @click="nav = true" class="btn-ghost -ml-2 px-2" aria-label="Buka menu"><x-icon name="menu" class="size-5" /></button>
+            <button @click="nav = true" :aria-expanded="nav" aria-controls="sidebar" class="btn-ghost -ml-2 min-h-11 min-w-11 px-2" aria-label="Buka menu"><x-icon name="menu" class="size-5" /></button>
             <span class="flex items-center gap-2"><img src="{{ \App\Support\Brand::logo() }}" alt="{{ \App\Support\Brand::name() }}" class="h-6 w-auto"><span class="font-mono text-[10px] font-bold uppercase tracking-widest text-red-500">Admin</span></span>
             <span class="w-9"></span>
         </header>

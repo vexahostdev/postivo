@@ -12,6 +12,7 @@ use App\Support\ApiError;
 use App\Support\Present;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 
 class EmailController extends Controller
@@ -28,12 +29,35 @@ class EmailController extends Controller
             $p.'bcc.*' => ['email:rfc'],
             $p.'reply_to' => ['nullable', 'email:rfc'],
             $p.'subject' => ['required', 'string', 'max:255'],
-            $p.'html' => ['nullable', 'string', 'required_without:'.$p.'text'],
-            $p.'text' => ['nullable', 'string'],
-            $p.'headers' => ['nullable', 'array'],
-            $p.'attachments' => ['nullable', 'array', 'max:10'],
+            // mediumText MySQL ±16 MB; 3 juta karakter tetap aman untuk UTF-8.
+            $p.'html' => ['nullable', 'string', 'max:3000000', 'required_without:'.$p.'text'],
+            $p.'text' => ['nullable', 'string', 'max:3000000'],
+            $p.'headers' => ['nullable', 'array', function (string $attribute, mixed $value, \Closure $fail) {
+                foreach (array_keys((array) $value) as $name) {
+                    if (! EmailIngestService::isValidHeaderName((string) $name)) {
+                        $fail('Invalid email header field name.');
+
+                        return;
+                    }
+                }
+            }],
+            $p.'headers.*' => ['string', 'max:2000'],
+            $p.'attachments' => ['nullable', 'array', 'max:10', function (string $attribute, mixed $value, \Closure $fail) {
+                $bytes = 0;
+                foreach ((array) $value as $a) {
+                    // Perkiraan ukuran ter-decode tanpa melakukan decode penuh di tahap validasi.
+                    $bytes += is_array($a) && is_string($a['content'] ?? null) ? (int) ceil(strlen($a['content']) * 3 / 4) : 0;
+                }
+                if ($bytes > (int) config('postivo.limits.max_payload_bytes')) {
+                    $fail('Total attachment size exceeds the maximum message size.');
+                }
+            }],
             $p.'attachments.*.filename' => ['required', 'string', 'max:255'],
-            $p.'attachments.*.content' => ['required', 'string'],
+            $p.'attachments.*.content' => ['required', 'string', function (string $attribute, mixed $value, \Closure $fail) {
+                if (! is_string($value) || base64_decode($value, true) === false) {
+                    $fail('Attachment content must be valid base64.');
+                }
+            }],
             $p.'attachments.*.content_type' => ['nullable', 'string', 'max:127'],
             $p.'tags' => ['nullable', 'array', 'max:10'],
             $p.'tags.*' => ['string', 'max:64'],
@@ -85,7 +109,7 @@ class EmailController extends Controller
         $q = Email::query()->with('dispatches', 'domain')->orderByDesc('created_at')->orderByDesc('id');
 
         if ($tag = $request->query('tag')) {
-            $q->where('tags', 'like', '%"'.str_replace(['%', '_', '"'], '', $tag).'"%');
+            $q->where('tags', 'like', '%"'.str_replace(['\\', '%', '_', '"'], '', $tag).'"%');
         }
         if ($status = $request->query('status')) {
             $q->whereHas('dispatches', fn ($d) => $d->where('status', strtoupper($status)));
@@ -122,17 +146,23 @@ class EmailController extends Controller
 
     public function cancel(string $id, DispatchStateMachine $machine): JsonResponse
     {
-        $email = Email::query()->with('dispatches')->findOrFail($id);
-        $cancelable = $email->dispatches->filter(fn ($d) => $d->status === DispatchStatus::QUEUED);
-        if ($cancelable->isEmpty()) {
-            return ApiError::make('conflict', 'Email is no longer cancelable.', 409);
-        }
-        $email->update(['canceled_at' => now()]);
-        foreach ($cancelable as $d) {
-            $machine->transition($d, DispatchStatus::FAILED, 'failed', ['smtp_response' => 'canceled'], ['reason' => 'canceled']);
-        }
+        return DB::transaction(function () use ($id, $machine) {
+            // Same parent-first lock as the worker; never decide using eager-loaded stale state.
+            $email = Email::query()->lockForUpdate()->findOrFail($id);
+            $dispatches = $email->dispatches()->withoutGlobalScope('organization')->lockForUpdate()->get();
+            $cancelable = $dispatches->filter(fn ($d) => $d->status === DispatchStatus::QUEUED);
+            if ($email->canceled_at || $dispatches->contains(fn ($d) => $d->status === DispatchStatus::SENDING) || $cancelable->isEmpty()) {
+                return ApiError::make('conflict', 'Email is no longer cancelable.', 409);
+            }
+            $email->update(['canceled_at' => now()]);
+            foreach ($cancelable as $d) {
+                $machine->transition($d, DispatchStatus::FAILED, null, ['smtp_response' => 'canceled']);
+                // record() immediately fans out webhook jobs, so wait for the outermost commit.
+                DB::afterCommit(fn () => $machine->record($d, 'failed', ['reason' => 'canceled']));
+            }
 
-        return response()->json(Present::email($email->refresh()));
+            return response()->json(Present::email($email->refresh()));
+        });
     }
 
     private function accept(EmailIngestService $ingest, Request $request, array $data, ?string $idem): array

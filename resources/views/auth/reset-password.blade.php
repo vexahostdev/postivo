@@ -2,12 +2,12 @@
 @section('title', 'Atur ulang kata sandi')
 @section('content')
     <h1 class="text-2xl font-semibold tracking-tight">Atur ulang kata sandi</h1>
-    <form method="POST" action="{{ route('password.update') }}" class="mt-6 space-y-4">
+    <form method="POST" action="{{ route('password.update') }}" class="mt-6 space-y-4" autocomplete="off">
         @csrf
         <input type="hidden" name="token" value="{{ $token }}">
         <div>
             <label class="label" for="email">Email</label>
-            <input class="input" id="email" name="email" type="email" value="{{ old('email', $email) }}" required>
+            <input class="input" id="email" name="email" type="email" autocomplete="email" value="{{ old('email', $email) }}" required>
             @error('email')<p class="err">{{ $message }}</p>@enderror
         </div>
         <div>

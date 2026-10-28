@@ -1,6 +1,7 @@
 <section id="status-email" data-doc="Siklus status" data-group="Status & Event">
     <h2>Siklus status</h2>
     <p>Setiap penerima punya satu status. Status hanya <b>maju</b>: event yang datang terlambat tidak bisa memundurkannya (mis. <code>delivered</code> setelah <code>bounced</code> diabaikan).</p>
+    <div class="overflow-x-auto">
     <table>
         <thead><tr><th>Status</th><th>Arti</th></tr></thead>
         <tbody>
@@ -15,11 +16,13 @@
             <tr><td><code>SUPPRESSED</code></td><td>Dilewati karena ada di suppression list.</td></tr>
         </tbody>
     </table>
+    </div>
     <p><code>opened</code>, <code>clicked</code>, dan <code>unsubscribed</code> adalah <b>event</b>, bukan status — satu email bisa berstatus <code>DELIVERED</code> dan tetap menerima event <code>opened</code> berkali-kali.</p>
 </section>
 
 <section id="bounce" data-doc="Bounce & komplain" data-group="Status & Event">
     <h2>Bounce &amp; komplain</h2>
+    <div class="overflow-x-auto">
     <table>
         <thead><tr><th>Jenis</th><th>Penyebab</th><th>Perlakuan</th></tr></thead>
         <tbody>
@@ -29,6 +32,7 @@
             <tr><td>Komplain</td><td>Penerima menekan “spam”</td><td>Status <code>COMPLAINED</code>; alamat di-suppress.</td></tr>
         </tbody>
     </table>
+    </div>
     <x-callout type="warn" title="Jaga reputasi">Bounce &gt; 2% atau komplain &gt; 0,1% merusak reputasi domain. Jangan mengirim ke daftar yang dibeli atau tidak berizin.</x-callout>
 </section>
 

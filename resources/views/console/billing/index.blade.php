@@ -9,7 +9,7 @@
 @endphp
 <x-page-header title="Billing" sub="Paket, pemakaian, dan riwayat tagihan." />
 
-<section class="card mb-8 grid gap-px bg-line sm:grid-cols-3">
+<section class="card mb-8 grid grid-cols-1 gap-px bg-line sm:grid-cols-3">
     <div class="bg-white p-5"><p class="kicker">Paket aktif</p><p class="mt-2 text-2xl font-semibold">{{ ucfirst($currentOrg->plan) }}</p>
         <p class="hint">{{ $currentOrg->plan_expires_at ? 'Aktif sampai '.$currentOrg->plan_expires_at->timezone('Asia/Jakarta')->format('d M Y') : 'Tanpa masa berlaku' }}</p></div>
     <div class="bg-white p-5"><p class="kicker">Pemakaian bulan ini</p><p class="mt-2 text-2xl font-semibold tabular-nums">{{ number_format($used) }} <span class="text-sm font-normal text-muted">/ {{ number_format($currentOrg->monthly_quota) }}</span></p>
@@ -18,7 +18,7 @@
 </section>
 
 <h2 class="kicker mb-3">Pilih paket</h2>
-<div class="grid gap-px border border-line bg-line sm:grid-cols-2 xl:grid-cols-4">
+<div class="grid grid-cols-1 gap-px border border-line bg-line sm:grid-cols-2 xl:grid-cols-4">
     @foreach($plans as $key => $p)
         @php $current = $currentOrg->plan === $key; @endphp
         <div class="flex flex-col bg-white p-5">

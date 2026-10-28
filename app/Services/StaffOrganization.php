@@ -28,7 +28,7 @@ class StaffOrganization
 
         $org = Organization::create([
             'name' => 'Postivo Internal — '.$user->name,
-            'slug' => 'internal-'.Str::slug($user->name).'-'.Str::lower(Str::random(5)),
+            'slug' => 'internal-'.Str::limit(Str::slug($user->name) ?: 'staff', 60, '').'-'.Str::lower(Str::random(5)),
             'plan' => $top['key'],
             'monthly_quota' => $top['monthly_quota'],
             'daily_limit' => $top['daily_limit'],

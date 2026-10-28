@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\EnsureValidImpersonation;
 use App\Http\Middleware\RequireRole;
 use App\Http\Middleware\SetCurrentOrganization;
 use App\Http\Middleware\SetRequestId;
@@ -34,7 +35,9 @@ return Application::configure(basePath: dirname(__DIR__))
             'staff' => \App\Http\Middleware\EnsureStaff::class,
         ]);
         $middleware->api(prepend: [SetRequestId::class]);
-        $middleware->web(append: [\App\Http\Middleware\SecurityHeaders::class]);
+        $middleware->authenticateSessions();
+        $middleware->web(append: [EnsureValidImpersonation::class, \App\Http\Middleware\SecurityHeaders::class]);
+        $middleware->appendToPriorityList(\Illuminate\Session\Middleware\StartSession::class, EnsureValidImpersonation::class);
         $middleware->redirectGuestsTo(fn () => route('login'));
         $middleware->redirectUsersTo(fn () => route('console.dashboard'));
         $middleware->trustProxies(at: '*');

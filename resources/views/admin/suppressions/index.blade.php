@@ -15,7 +15,7 @@
             <tr><td class="td mono">{{ $s->email }}</td>
                 <td class="td"><a class="underline-offset-2 hover:underline" href="{{ route('admin.organizations.show', $s->organization_id) }}">{{ $orgs[$s->organization_id]->name ?? '—' }}</a></td>
                 <td class="td mono text-muted">{{ $s->reason }}</td><td class="td mono text-muted">{{ $s->created_at?->diffForHumans() }}</td>
-                <td class="td">@if($can)<form method="POST" action="{{ route('admin.suppressions.destroy', $s->id) }}" class="flex justify-end gap-1" onsubmit="return confirm('Hapus entri ini?')">@csrf @method('DELETE')
+                <td class="td">@if($can)<form method="POST" action="{{ route('admin.suppressions.destroy', $s->id) }}" class="flex justify-end gap-1" data-confirm="Hapus entri ini?">@csrf @method('DELETE')
                     <input class="input w-40 py-1 text-xs" name="reason" required minlength="5" placeholder="Alasan" aria-label="Alasan"><button class="btn-danger btn-sm">Hapus</button></form>@endif</td></tr>
         @empty<tr><td class="td text-muted" colspan="5">Tidak ada hasil.</td></tr>@endforelse</tbody>
     </table>

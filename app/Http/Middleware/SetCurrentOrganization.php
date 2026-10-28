@@ -23,11 +23,6 @@ class SetCurrentOrganization
             return redirect()->route('login')->withErrors(['email' => 'Akun dinonaktifkan. Hubungi support.']);
         }
 
-        // Impersonasi staf = hanya-baca (ADMIN_PANEL_SPEC §1.5).
-        if (session('impersonator_id') && ! in_array($request->method(), ['GET', 'HEAD'], true)) {
-            abort(403, 'Mode impersonasi hanya-baca. Keluar dari impersonasi untuk mengubah data.');
-        }
-
         // Staf platform = pengguna biasa juga: pastikan punya organisasi internal.
         if ($user->isStaff() && ! Member::where('user_id', $user->id)->exists()) {
             \App\Services\StaffOrganization::ensure($user);

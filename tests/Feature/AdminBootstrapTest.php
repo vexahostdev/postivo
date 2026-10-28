@@ -60,7 +60,48 @@ class AdminBootstrapTest extends TestCase
         $this->get('/admin')->assertOk()->assertSee('Buka Console');
 
         $plain = User::create(['name' => 'P', 'email' => 'p@p.test', 'password' => 'password-123456']);
+        $this->flushSession();
         $this->actingAs($plain)->get('/console')->assertStatus(403)->assertSee('Belum tergabung di organisasi')->assertSee('Keluar');
+    }
+
+    public function test_production_seeding_does_not_create_demo_accounts_domains_or_keys(): void
+    {
+        $this->app->instance('env', 'production');
+        config(['postivo.admin.bootstrap' => ['name' => 'Administrator', 'email' => null, 'password' => null]]);
+
+        $this->artisan('db:seed', ['--class' => \Database\Seeders\DatabaseSeeder::class, '--force' => true]);
+
+        $this->assertSame(0, User::count());
+        $this->assertSame(0, \App\Models\Organization::count());
+        $this->assertSame(0, \App\Models\Domain::withoutGlobalScopes()->count());
+        $this->assertSame(0, \App\Models\ApiKey::withoutGlobalScopes()->count());
+    }
+
+    public function test_staging_seeding_does_not_create_demo_data(): void
+    {
+        $this->app->instance('env', 'staging');
+        config(['postivo.admin.bootstrap' => ['name' => 'Administrator', 'email' => null, 'password' => null]]);
+
+        $this->seed(\Database\Seeders\DatabaseSeeder::class);
+
+        $this->assertSame(0, User::count());
+        $this->assertSame(0, \App\Models\Organization::count());
+        $this->assertSame(0, \App\Models\Domain::withoutGlobalScopes()->count());
+        $this->assertSame(0, \App\Models\ApiKey::withoutGlobalScopes()->count());
+    }
+
+    public function test_production_seeding_preserves_explicit_admin_bootstrap(): void
+    {
+        $this->app->instance('env', 'production');
+        config(['postivo.admin.bootstrap' => ['name' => 'Administrator', 'email' => 'bootstrap@example.test', 'password' => 'dummy-bootstrap-123456']]);
+
+        $this->artisan('db:seed', ['--class' => \Database\Seeders\DatabaseSeeder::class, '--force' => true]);
+
+        $this->assertSame(1, User::count());
+        $this->assertSame('superadmin', User::firstOrFail()->platform_role->value);
+        $this->assertFalse(User::where('email', 'like', '%@postivo.test')->exists());
+        $this->assertSame(0, \App\Models\Domain::withoutGlobalScopes()->count());
+        $this->assertSame(0, \App\Models\ApiKey::withoutGlobalScopes()->count());
     }
 
     public function test_admin_can_log_in_and_lands_in_admin_panel(): void

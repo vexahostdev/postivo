@@ -28,6 +28,9 @@
   ::selection { background: var(--color-red-500); color: #fff; }
   :focus-visible { outline: 2px solid var(--color-red-500); outline-offset: 2px; }
   [x-cloak] { display: none !important; }
+  form[data-pending] button { pointer-events: none; opacity: .6; }
+  input[type="checkbox"], input[type="radio"] { @apply size-[17px] shrink-0 align-middle; }
+  label:has(input[type="checkbox"]), label:has(input[type="radio"]) { min-height: 36px; }
   @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after { animation: none !important; transition: none !important; }
   }
@@ -39,12 +42,12 @@
   .hint { @apply text-xs text-muted mt-1; }
   .err { @apply text-xs text-red-600 mt-1; }
 
-  .btn, .btn-primary, .btn-outline, .btn-ghost, .btn-danger { @apply inline-flex items-center justify-center gap-2 px-3.5 py-2 text-sm font-semibold border transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed; }
+  .btn, .btn-primary, .btn-outline, .btn-ghost, .btn-danger { @apply inline-flex min-h-9 items-center justify-center gap-2 border px-3.5 py-2 text-sm font-semibold transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed; }
   .btn-primary { @apply bg-red-500 border-red-500 text-white hover:bg-red-600 hover:border-red-600; }
   .btn-outline { @apply bg-white border-ink text-ink hover:bg-ink hover:text-white; }
   .btn-ghost { @apply border-transparent text-ink hover:bg-paper; }
   .btn-danger { @apply bg-white border-red-500 text-red-500 hover:bg-red-500 hover:text-white; }
-  .btn-sm { @apply px-2.5 py-1 text-xs; }
+  .btn-sm { @apply px-3 py-1.5 text-xs; }
 
   .card { @apply bg-white border border-line; }
   .kicker { @apply font-mono text-[11px] uppercase tracking-wider text-muted; }

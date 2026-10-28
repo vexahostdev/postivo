@@ -16,20 +16,18 @@ class DatabaseSeeder extends Seeder
 {
     public function run(ApiKeyService $keys, DomainService $domains, DnsAuditorService $auditor): void
     {
-        $user = User::firstOrCreate(['email' => 'demo@postivo.test'], ['name' => 'Demo User', 'password' => 'password-demo-123']);
-        $user->forceFill(['email_verified_at' => now()])->save();
-
-        // Superadmin awal dari ADMIN_EMAIL/ADMIN_PASSWORD (semua lingkungan, bila diisi).
         if (config('postivo.admin.bootstrap.email') && config('postivo.admin.bootstrap.password')) {
             \Illuminate\Support\Facades\Artisan::call('postivo:admin:create');
         }
+        if (! app()->environment(['local', 'testing'])) {
+            return;
+        }
 
-        // Staf platform demo (hanya non-production). 2FA tidak wajib di development.
-        if (! app()->isProduction()) {
-            foreach (['superadmin', 'support', 'finance'] as $role) {
-                User::firstOrCreate(['email' => "{$role}@postivo.test"], ['name' => ucfirst($role).' Demo', 'password' => 'password-demo-123'])
-                    ->forceFill(['platform_role' => $role, 'email_verified_at' => now()])->save();
-            }
+        $user = User::firstOrCreate(['email' => 'demo@postivo.test'], ['name' => 'Demo User', 'password' => 'password-demo-123']);
+        $user->forceFill(['email_verified_at' => now()])->save();
+        foreach (['superadmin', 'support', 'finance'] as $role) {
+            User::firstOrCreate(['email' => "{$role}@postivo.test"], ['name' => ucfirst($role).' Demo', 'password' => 'password-demo-123'])
+                ->forceFill(['platform_role' => $role, 'email_verified_at' => now()])->save();
         }
         $org = Organization::firstOrCreate(['slug' => 'demo-org'], ['name' => 'Demo Org']);
         Member::firstOrCreate(['organization_id' => $org->id, 'user_id' => $user->id], ['role' => MemberRole::OWNER]);

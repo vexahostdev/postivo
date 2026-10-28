@@ -4,10 +4,10 @@
 @php $can = auth()->user()->staffCan('billing.manage'); $rp = fn ($n) => 'Rp '.number_format($n, 0, ',', '.'); @endphp
 <a href="{{ route('admin.billing.index') }}" class="mono text-muted hover:underline">← Order</a>
 <x-page-header :title="$order->external_id" :sub="($org->name ?? '—').' · '.$order->planName().' '.$order->months.' bulan'"><span class="mono border border-ink px-1.5 py-0.5 uppercase">{{ $order->status }}</span></x-page-header>
-<div class="grid gap-6 lg:grid-cols-3">
+<div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
     <div class="space-y-6 lg:col-span-2">
         <section class="card"><div class="border-b border-line px-5 py-3"><h2 class="kicker">Rincian</h2></div>
-            <dl class="grid gap-px bg-line text-sm sm:grid-cols-2">
+            <dl class="grid grid-cols-1 gap-px bg-line text-sm sm:grid-cols-2">
                 @foreach([['Jumlah', $rp($order->amount)], ['Metode', $order->payment_method ?? '—'], ['Invoice Xendit', $order->xendit_invoice_id ?? '—'], ['Dibuat', $order->created_at->format('d M Y H:i')], ['Kedaluwarsa', $order->expires_at?->format('d M Y H:i') ?? '—'], ['Dibayar', $order->paid_at?->format('d M Y H:i') ?? '—']] as [$k, $v])
                     <div class="bg-white p-4"><dt class="kicker">{{ $k }}</dt><dd class="mono mt-1 break-all">{{ $v }}</dd></div>
                 @endforeach
@@ -23,7 +23,7 @@
         <form method="POST" action="{{ route('admin.billing.mark-paid', $order->id) }}" class="space-y-2">@csrf
             <label class="label" for="mp">Tandai lunas manual</label>
             <input class="input" id="mp" name="reason" required minlength="10" placeholder="Bukti pembayaran (min. 10 karakter)">
-            <button class="btn-primary w-full" onclick="return confirm('Aktifkan plan tanpa konfirmasi Xendit?')">Tandai lunas &amp; aktifkan plan</button>
+            <button class="btn-primary w-full" data-confirm="Aktifkan plan tanpa konfirmasi Xendit?">Tandai lunas &amp; aktifkan plan</button>
         </form>
         @if($order->status === 'PENDING')
         <form method="POST" action="{{ route('admin.billing.expire', $order->id) }}" class="space-y-2 border-t border-line pt-3">@csrf

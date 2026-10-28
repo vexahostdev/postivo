@@ -13,7 +13,7 @@ class WebhookDispatcher
     {
         $type = 'email.'.$event->type;
 
-        WebhookEndpoint::withoutGlobalScopes()
+        WebhookEndpoint::withoutGlobalScope('organization')
             ->where('organization_id', $event->organization_id)
             ->where('is_active', true)
             ->get()
@@ -25,7 +25,7 @@ class WebhookDispatcher
                     'event_public_id' => $event->public_id,
                     'status' => 'PENDING',
                 ]);
-                DeliverWebhookJob::dispatch($delivery->id)->onQueue('postivo_webhooks');
+                DeliverWebhookJob::dispatch($delivery->id)->onQueue('postivo_webhooks')->afterCommit();
             });
     }
 

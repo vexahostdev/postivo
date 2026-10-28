@@ -8,6 +8,7 @@
             <button class="btn-primary w-full">Terima undangan</button>
         </form>
     @else
-        <p class="mt-4 border border-red-500 bg-red-50 px-3 py-2 text-sm text-red-600">Undangan ini untuk {{ $invitation->email }}, sedangkan Anda masuk sebagai {{ auth()->user()->email }}. Keluar lalu masuk dengan akun yang benar.</p>
+        <p class="mt-4 break-words border border-red-500 bg-red-50 px-3 py-2 text-sm text-red-600">Undangan ini untuk <span class="mono break-all">{{ $invitation->email }}</span>, sedangkan Anda masuk sebagai <span class="mono break-all">{{ auth()->user()->email }}</span>.
+            <form method="POST" action="{{ route('logout') }}" class="mt-2 inline-flex">@csrf<button class="btn-outline btn-sm">Keluar</button></form> lalu masuk dengan akun yang benar.</p>
     @endif
 @endsection

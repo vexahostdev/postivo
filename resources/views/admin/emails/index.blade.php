@@ -14,7 +14,7 @@
         <tbody>@forelse($dispatches as $d)
             <tr class="hover:bg-paper">
                 <td class="td mono"><a class="underline-offset-2 hover:underline" href="{{ route('admin.emails.show', $d->id) }}">{{ $d->recipient }}</a></td>
-                <td class="td max-w-xs truncate">{{ $d->email?->subject }}</td>
+                <td class="td"><p class="max-w-xs truncate" title="{{ $d->email?->subject }}">{{ $d->email?->subject }}</p></td>
                 <td class="td"><a class="underline-offset-2 hover:underline" href="{{ route('admin.organizations.show', $d->organization_id) }}">{{ $orgs[$d->organization_id]->name ?? '—' }}</a></td>
                 <td class="td"><x-status-pill :status="$d->status" /></td>
                 <td class="td mono text-muted">{{ $d->relay ?? '—' }}</td>

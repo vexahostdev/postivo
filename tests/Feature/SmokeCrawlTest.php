@@ -70,6 +70,7 @@ class SmokeCrawlTest extends TestCase
         foreach (["/console/emails/$dispatchId", "/console/domains/{$domain->id}", "/console/billing/orders/{$order->id}", '/console/billing/checkout/starter'] as $p) {
             $this->get($p)->assertOk();
         }
+        $this->flushSession();
         $this->actingAs(User::where('email', 'superadmin@postivo.test')->firstOrFail());
         foreach (["/admin/emails/$dispatchId", "/admin/organizations/{$org->id}", "/admin/users/{$owner->id}", "/admin/billing/orders/{$order->id}"] as $p) {
             $this->get($p)->assertOk();

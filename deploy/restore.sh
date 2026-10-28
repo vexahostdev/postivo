@@ -1,5 +1,5 @@
 #!/bin/sh
-# Pulihkan backup: ./deploy/restore.sh backups/postivo-XXXX.sql.gz  (UJI di staging dulu secara berkala)
+# Pulihkan backup: ./deploy/restore.sh ../postivo-backups/postivo-XXXX.sql.gz (uji di staging).
 set -eu
 cd "$(dirname "$0")/.."
 [ -f "${1:-}" ] || { echo "Pemakaian: $0 <file.sql.gz>" >&2; exit 1; }

@@ -3,6 +3,27 @@ import focus from '@alpinejs/focus';
 
 Alpine.plugin(focus);
 
+async function toClipboard(value) {
+    try {
+        await navigator.clipboard.writeText(value);
+        return true;
+    } catch (e) {
+        try {
+            const ta = document.createElement('textarea');
+            ta.value = value;
+            ta.setAttribute('readonly', '');
+            ta.style.cssText = 'position:fixed;top:-9999px;opacity:0';
+            document.body.appendChild(ta);
+            ta.select();
+            const ok = document.execCommand('copy');
+            ta.remove();
+            return ok;
+        } catch (e2) {
+            return false;
+        }
+    }
+}
+
 const caps = [
     {
         id: 'relay', title: 'Dedicated SMTP Relay', subtitle: 'REST API and SMTP, one pipeline', kicker: 'Capability 01',
@@ -26,48 +47,13 @@ const caps = [
 
 Alpine.data('landing', () => ({
     tab: 'curl', copied: false, menu: false, modal: null, caps,
-    snippets: {
-        curl: `curl https://api.postivo.my.id/v1/emails \\
-  -H "Authorization: Bearer $POSTIVO_API_KEY" \\
-  -H "Idempotency-Key: otp-8812" \\
-  -H "Content-Type: application/json" \\
-  -d '{
-    "from": "Acme <noreply@mail.acme.com>",
-    "to": ["user@example.com"],
-    "subject": "Your verification code",
-    "html": "<p>Code: <b>123456</b></p>"
-  }'`,
-        node: `const res = await fetch('https://api.postivo.my.id/v1/emails', {
-  method: 'POST',
-  headers: {
-    Authorization: \`Bearer \${process.env.POSTIVO_API_KEY}\`,
-    'Idempotency-Key': 'otp-8812',
-    'Content-Type': 'application/json',
-  },
-  body: JSON.stringify({
-    from: 'Acme <noreply@mail.acme.com>',
-    to: ['user@example.com'],
-    subject: 'Your verification code',
-    html: '<p>Code: <b>123456</b></p>',
-  }),
-});
-console.log(res.status, await res.json()); // 202`,
-        php: `$res = Http::withToken(env('POSTIVO_API_KEY'))
-    ->withHeaders(['Idempotency-Key' => 'otp-8812'])
-    ->post('https://api.postivo.my.id/v1/emails', [
-        'from'    => 'Acme <noreply@mail.acme.com>',
-        'to'      => ['user@example.com'],
-        'subject' => 'Your verification code',
-        'html'    => '<p>Code: <b>123456</b></p>',
-    ]);
-$res->status(); // 202`,
-    },
+    // Snippet dibaca dari Blade agar first paint dan no-JS tetap menampilkan contoh kode.
+    snippets: JSON.parse(document.getElementById('landing-snippets')?.textContent || '{}'),
     async copyCode() {
-        try {
-            await navigator.clipboard.writeText(this.snippets[this.tab]);
+        if (await toClipboard(this.snippets[this.tab])) {
             this.copied = true;
             setTimeout(() => (this.copied = false), 1500);
-        } catch (e) { /* clipboard diblokir */ }
+        }
     },
     pipeline: ['Accepted  → API / SMTP 587', 'Queued    → Redis · outbound', 'Signed    → DKIM rsa-sha256', 'Relayed   → Stalwart (primary)', 'Fallback  → Brevo (on transient failure)', 'Delivered → 250 2.0.0 OK'],
     dns: [['TXT', 'postivo._domainkey.mail.acme.com', 'verified'], ['TXT', 'mail.acme.com (SPF)', 'verified'], ['CNAME', 'bounces.mail.acme.com', 'verified'], ['TXT', '_dmarc.mail.acme.com', 'pending'], ['CNAME', 'trk.mail.acme.com', 'pending']],
@@ -76,4 +62,5 @@ $res->status(); // 202`,
 }));
 
 window.Alpine = Alpine;
+window.toClipboard = toClipboard;
 Alpine.start();

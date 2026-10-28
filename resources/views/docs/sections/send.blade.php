@@ -1,6 +1,7 @@
 <section id="kirim-email" data-doc="POST /v1/emails" data-group="Mengirim Email">
     <h2>POST /v1/emails</h2>
     <p>Mengirim satu email ke satu atau beberapa penerima. Scope: <code>emails:send</code>.</p>
+    <div class="overflow-x-auto">
     <table>
         <thead><tr><th>Field</th><th>Tipe</th><th>Keterangan</th></tr></thead>
         <tbody>
@@ -17,6 +18,7 @@
             <tr><td><code>scheduled_at</code></td><td>ISO-8601</td><td>Waktu kirim di masa depan.</td></tr>
         </tbody>
     </table>
+    </div>
     <p>Setiap penerima menjadi satu <i>dispatch</i> terpisah dan menerima email sendiri (alamat penerima lain tidak terlihat). Penerima yang ada di <a href="#suppression">suppression list</a> ditandai <code>SUPPRESSED</code> dan tidak dikirimi; bila <b>semua</b> penerima suppressed, permintaan ditolak <code>422 recipient_suppressed</code>.</p>
     <x-code title="Respons error validasi — 422" lang="json">@verbatim{
   "error": {

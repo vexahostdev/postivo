@@ -4,5 +4,5 @@
         <h1 class="text-xl font-semibold tracking-tight sm:text-2xl">{{ $title }}</h1>
         @if($sub)<p class="mt-1 text-sm text-muted">{{ $sub }}</p>@endif
     </div>
-    <div class="flex items-center gap-2">{{ $slot }}</div>
+    <div class="flex flex-wrap items-center gap-2">{{ $slot }}</div>
 </div>

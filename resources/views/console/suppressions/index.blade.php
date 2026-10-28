@@ -4,16 +4,16 @@
 @php $canWrite = $currentRole->atLeast(\App\Enums\MemberRole::DEVELOPER); @endphp
 <x-page-header title="Suppressions" sub="Alamat yang tidak akan menerima email dari organisasi ini." />
 
-<div class="mb-6 grid gap-4 lg:grid-cols-2">
-    <form method="GET" class="flex gap-2">
-        <input class="input" name="q" value="{{ request('q') }}" placeholder="Cari alamat email" aria-label="Cari">
-        <button class="btn-outline">Cari</button>
+<div class="mb-6 grid grid-cols-1 gap-4 lg:grid-cols-2">
+    <form method="GET" class="flex flex-wrap gap-2">
+        <input class="input min-w-0 flex-1" name="q" value="{{ request('q') }}" placeholder="Cari alamat email" aria-label="Cari">
+        <button class="btn-outline shrink-0">Cari</button>
     </form>
     @if($canWrite)
-    <form method="POST" action="{{ route('console.suppressions.store') }}" class="flex gap-2">
+    <form method="POST" action="{{ route('console.suppressions.store') }}" class="flex flex-wrap gap-2">
         @csrf
-        <input class="input" type="email" name="email" placeholder="Tambah alamat manual" required aria-label="Alamat email">
-        <button class="btn-primary"><x-icon name="plus" />Tambah</button>
+        <input class="input min-w-0 flex-1" type="email" inputmode="email" name="email" placeholder="Tambah alamat manual" required aria-label="Alamat email">
+        <button class="btn-primary shrink-0"><x-icon name="plus" />Tambah</button>
     </form>
     @endif
 </div>
@@ -33,7 +33,7 @@
                     <td class="td mono text-muted">{{ $s->created_at?->diffForHumans() }}</td>
                     <td class="td text-right">
                         @if($canWrite)
-                        <form method="POST" action="{{ route('console.suppressions.destroy', $s->id) }}" onsubmit="return confirm('Hapus {{ $s->email }} dari suppression list?')">@csrf @method('DELETE')
+                        <form method="POST" action="{{ route('console.suppressions.destroy', $s->id) }}" data-confirm="Hapus {{ $s->email }} dari suppression list?">@csrf @method('DELETE')
                             <button class="btn-ghost btn-sm" aria-label="Hapus"><x-icon name="trash" class="size-3.5" />Hapus</button></form>
                         @endif
                     </td>

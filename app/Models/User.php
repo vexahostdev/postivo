@@ -43,6 +43,15 @@ class User extends Authenticatable implements MustVerifyEmail
         return $this->two_factor_confirmed_at !== null && $this->two_factor_secret !== null;
     }
 
+    public function twoFactorFingerprint(): ?string
+    {
+        if (! $this->hasTwoFactor()) {
+            return null;
+        }
+
+        return hash_hmac('sha256', $this->getAuthIdentifier().'|'.$this->two_factor_secret, (string) config('app.key'));
+    }
+
     public function sendEmailVerificationNotification(): void
     {
         $this->notify(new VerifyEmailNotification);

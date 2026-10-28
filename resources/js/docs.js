@@ -6,6 +6,7 @@ Alpine.plugin(focus);
 // Halaman dokumentasi: pencarian Ctrl+K (indeks dari DOM) dan scrollspy sidebar.
 Alpine.data('docs', () => ({
     nav: false,
+    vw: window.innerWidth,
     search: false,
     q: '',
     idx: 0,
@@ -21,10 +22,16 @@ Alpine.data('docs', () => ({
         }));
 
         const obs = new IntersectionObserver(
-            (entries) => entries.forEach((e) => e.isIntersecting && (this.active = e.target.id)),
+            (entries) => {
+                const visible = entries.filter((e) => e.isIntersecting);
+                if (!visible.length) return;
+                const top = visible.reduce((a, b) => (a.boundingClientRect.top <= b.boundingClientRect.top ? a : b));
+                this.active = top.target.id;
+            },
             { rootMargin: '-80px 0px -70% 0px' },
         );
         document.querySelectorAll('[data-doc]').forEach((el) => obs.observe(el));
+        if (location.hash) this.active = location.hash.slice(1);
         this.$watch('q', () => (this.idx = 0));
     },
 

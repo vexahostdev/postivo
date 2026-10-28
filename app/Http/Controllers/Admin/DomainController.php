@@ -29,7 +29,7 @@ class DomainController extends AdminController
     public function reaudit(string $id, DnsAuditorService $auditor): RedirectResponse
     {
         $this->need('domain.manage');
-        $d = $auditor->audit(Domain::withoutGlobalScopes()->with('records')->findOrFail($id));
+        $d = $auditor->audit(Domain::withoutGlobalScope('organization')->with('records')->findOrFail($id));
         AdminAudit::log('domain.reaudit', 'domain', $id, $d->organization_id, null, ['status' => $d->status]);
 
         return back()->with('status', "Audit selesai — status {$d->status}.");
@@ -40,7 +40,7 @@ class DomainController extends AdminController
     {
         $this->need('domain.manage');
         $reason = $this->reason($request);
-        $d = Domain::withoutGlobalScopes()->with('records')->findOrFail($id);
+        $d = Domain::withoutGlobalScope('organization')->with('records')->findOrFail($id);
 
         if ($d->status === 'SUSPENDED') {
             $d->update(['status' => 'PENDING']);

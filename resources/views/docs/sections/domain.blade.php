@@ -14,6 +14,7 @@
 <section id="record-dns" data-doc="Lima record DNS" data-group="Domain & DNS">
     <h2>Lima record DNS</h2>
     <p>Pasang record berikut di penyedia DNS domain Anda (Cloudflare, Niagahoster, dsb.). Nilai persisnya tampil di halaman domain — tombol salin tersedia.</p>
+    <div class="overflow-x-auto">
     <table>
         <thead><tr><th>Record</th><th>Tipe · Host</th><th>Fungsi</th><th>Status</th></tr></thead>
         <tbody>
@@ -24,6 +25,7 @@
             <tr><td><b>Tracking</b></td><td><code>CNAME</code> · <code>trk.{domain}</code> → <code>{{ config('postivo.dns.tracking_target') }}</code></td><td>Link/piksel tracking di domain Anda sendiri</td><td>Opsional</td></tr>
         </tbody>
     </table>
+    </div>
     <x-callout title="Sudah punya SPF?">Satu domain hanya boleh punya <b>satu</b> record SPF. Jika sudah ada, tambahkan <code>include:{{ config('postivo.dns.spf_include') }}</code> ke record yang ada — jangan membuat record kedua.</x-callout>
     <x-callout type="warn" title="DMARC bertahap">Mulai dengan <code>p=none</code> dan pantau laporan 2–4 minggu, baru naikkan ke <code>quarantine</code> lalu <code>reject</code>.</x-callout>
 </section>
@@ -31,6 +33,7 @@
 <section id="verifikasi-dns" data-doc="Verifikasi & status domain" data-group="Domain & DNS">
     <h2>Verifikasi &amp; status domain</h2>
     <p>Klik <b>Verifikasi sekarang</b> di console atau panggil <code>POST /v1/domains/{id}/verify</code>. Postivo juga mengaudit ulang semua domain otomatis setiap 15 menit.</p>
+    <div class="overflow-x-auto">
     <table>
         <thead><tr><th>Status</th><th>Arti</th></tr></thead>
         <tbody>
@@ -40,6 +43,7 @@
             <tr><td><code>SUSPENDED</code></td><td>Dihentikan oleh Postivo (pelanggaran kebijakan). Hubungi support.</td></tr>
         </tbody>
     </table>
+    </div>
     <p>Gangguan resolver DNS <b>tidak</b> dihitung sebagai record gagal: status record terakhir dipertahankan sampai pengecekan berikutnya berhasil.</p>
 </section>
 

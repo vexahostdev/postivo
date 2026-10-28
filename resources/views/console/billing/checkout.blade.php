@@ -5,12 +5,12 @@
 <a href="{{ route('console.billing.index') }}" class="mono text-muted hover:underline">← Billing</a>
 <x-page-header title="Checkout" :sub="'Paket '.$plan['name']" />
 
-<div class="grid gap-6 lg:grid-cols-3" x-data="{ months: {{ $months }}, price: {{ $plan['price'] }}, fmt(n) { return 'Rp ' + n.toLocaleString('id-ID'); } }">
+<div class="grid grid-cols-1 gap-6 lg:grid-cols-3" x-data="{ months: {{ $months }}, price: {{ $plan['price'] }}, fmt(n) { return 'Rp ' + n.toLocaleString('id-ID'); } }">
     <form method="POST" action="{{ route('console.billing.store', $planKey) }}" class="card space-y-6 p-6 lg:col-span-2">
         @csrf
         <fieldset>
             <legend class="label">Durasi</legend>
-            <div class="grid gap-2 sm:grid-cols-4">
+            <div class="grid grid-cols-1 gap-2 sm:grid-cols-4">
                 @foreach([1 => '1 bulan', 3 => '3 bulan', 6 => '6 bulan', 12 => '12 bulan'] as $m => $label)
                     <label class="flex cursor-pointer items-center gap-2 border px-3 py-2.5 text-sm" :class="months == {{ $m }} ? 'border-red-500 bg-red-50' : 'border-line'">
                         <input type="radio" name="months" value="{{ $m }}" x-model.number="months" class="accent-red-500"> {{ $label }}

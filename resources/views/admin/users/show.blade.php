@@ -8,12 +8,14 @@
     @if($user->platform_role)<span class="mono border border-ink px-1.5 py-0.5 uppercase">{{ $user->platform_role->value }}</span>@endif
 </x-page-header>
 
-<div class="grid gap-6 lg:grid-cols-3">
+<div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
     <section class="card lg:col-span-2">
         <div class="border-b border-line px-5 py-3"><h2 class="kicker">Keanggotaan</h2></div>
-        <table class="w-full"><tbody>@forelse($memberships as $m)<tr><td class="td"><a class="underline-offset-2 hover:underline" href="{{ route('admin.organizations.show', $m->organization_id) }}">{{ $m->organization->name }}</a></td><td class="td mono">{{ $m->role->value }}</td><td class="td mono text-muted">{{ $m->organization->plan }}</td></tr>@empty<tr><td class="td text-muted">Bukan anggota organisasi mana pun.</td></tr>@endforelse</tbody></table>
-        <dl class="grid grid-cols-2 gap-px border-t border-line bg-line text-sm">
-            <div class="bg-white p-4"><dt class="kicker">Email terverifikasi</dt><dd class="mono mt-1">{{ $user->email_verified_at?->format('d M Y H:i') ?? '—' }}</dd></div>
+        <div class="overflow-x-auto">
+        <table class="w-full"><tbody>@forelse($memberships as $m)<tr><td class="td min-w-40 break-all"><a class="underline-offset-2 hover:underline" href="{{ route('admin.organizations.show', $m->organization_id) }}">{{ $m->organization->name }}</a></td><td class="td mono">{{ $m->role->value }}</td><td class="td mono text-muted">{{ $m->organization->plan }}</td></tr>@empty<tr><td class="td text-muted">Bukan anggota organisasi mana pun.</td></tr>@endforelse</tbody></table>
+        </div>
+        <dl class="grid grid-cols-1 gap-px border-t border-line bg-line text-sm sm:grid-cols-2">
+            <div class="bg-white p-4"><dt class="kicker">Email terverifikasi</dt><dd class="mono mt-1 whitespace-nowrap">{{ $user->email_verified_at?->format('d M Y H:i') ?? '—' }}</dd></div>
             <div class="bg-white p-4"><dt class="kicker">2FA</dt><dd class="mono mt-1">{{ $user->hasTwoFactor() ? 'aktif' : 'tidak aktif' }}</dd></div>
         </dl>
     </section>
@@ -26,7 +28,7 @@
             <form method="POST" action="{{ route('admin.users.reset', $user->id) }}">@csrf<button class="btn-outline w-full">Kirim tautan reset kata sandi</button></form>
             <form method="POST" action="{{ route('admin.users.disable', $user->id) }}" class="space-y-2 border-t border-line pt-3">@csrf
                 <input class="input" name="reason" required minlength="5" placeholder="Alasan (wajib)" aria-label="Alasan">
-                <button class="{{ $user->disabled_at ? 'btn-outline' : 'btn-danger' }} w-full" onclick="return confirm('Lanjutkan?')">{{ $user->disabled_at ? 'Aktifkan kembali akun' : 'Nonaktifkan akun & putus sesi' }}</button>
+                <button class="{{ $user->disabled_at ? 'btn-outline' : 'btn-danger' }} w-full" data-confirm="Lanjutkan?">{{ $user->disabled_at ? 'Aktifkan kembali akun' : 'Nonaktifkan akun & putus sesi' }}</button>
             </form>
         </section>
         @endif
@@ -42,7 +44,7 @@
             @if($user->hasTwoFactor())
             <form method="POST" action="{{ route('admin.users.reset-2fa', $user->id) }}" class="space-y-2 border-t border-line pt-3">@csrf
                 <input class="input" name="reason" required minlength="5" placeholder="Alasan reset 2FA" aria-label="Alasan">
-                <button class="btn-danger w-full" onclick="return confirm('Reset 2FA pengguna ini?')">Reset 2FA</button>
+                <button class="btn-danger w-full" data-confirm="Reset 2FA pengguna ini?">Reset 2FA</button>
             </form>
             @endif
         </section>

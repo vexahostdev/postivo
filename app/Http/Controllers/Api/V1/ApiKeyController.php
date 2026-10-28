@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Controller;
 use App\Models\ApiKey;
 use App\Services\ApiKeyService;
+use App\Support\ApiError;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -23,7 +24,18 @@ class ApiKeyController extends Controller
             'scopes' => ['sometimes', 'array', 'min:1'],
             'scopes.*' => ['in:'.implode(',', ApiKeyService::ALL_SCOPES)],
         ]);
-        [$key, $plain] = $keys->create($request->attributes->get('org'), $data['name'], $data['environment'] ?? 'live', $data['scopes'] ?? ['emails:send']);
+        $parent = $request->attributes->get('api_key');
+        $environment = $data['environment'] ?? $parent->environment;
+        $scopes = $data['scopes'] ?? ['emails:send'];
+        if ($parent->environment === 'test' && $environment !== 'test') {
+            return ApiError::make('forbidden', 'A test API key cannot create live API keys.', 403);
+        }
+        foreach ($scopes as $scope) {
+            if (! $parent->can($scope)) {
+                return ApiError::make('scope_missing', 'A child API key cannot exceed its parent scopes.', 403);
+            }
+        }
+        [$key, $plain] = $keys->create($request->attributes->get('org'), $data['name'], $environment, $scopes, $parent->domain_ids);
 
         return response()->json($key->toArray() + ['key' => $plain], 201);
     }

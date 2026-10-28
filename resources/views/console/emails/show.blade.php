@@ -6,7 +6,7 @@
     <x-status-pill :status="$d->status" />
 </x-page-header>
 
-<div class="grid gap-6 lg:grid-cols-3" x-data="{ tab: 'preview' }">
+<div class="grid grid-cols-1 gap-6 lg:grid-cols-3" x-data="{ tab: 'preview' }">
     <div class="space-y-6 lg:col-span-2">
         <section class="card">
             <div class="flex gap-1 border-b border-line px-3 py-2" role="tablist">
@@ -16,7 +16,7 @@
                 @endforeach
             </div>
             {{-- HTML pengirim dirender di iframe sandbox tanpa izin apa pun → skrip & tracking tidak jalan. --}}
-            <div x-show="tab === 'preview'">
+            <div x-cloak x-show="tab === 'preview'">
                 @if($email->html_body)
                     <iframe sandbox="" referrerpolicy="no-referrer" srcdoc="{{ $email->html_body }}" class="h-96 w-full bg-white" title="Preview email"></iframe>
                 @else
@@ -36,7 +36,7 @@
                 @forelse($d->events as $ev)
                     <li class="relative flex gap-4 border-l border-line pb-5 pl-5 last:pb-0">
                         <span @class(['absolute -left-[4px] top-1.5 size-[7px] rounded-full', 'bg-red-500' => in_array($ev->type, ['bounced','failed','complained']), 'bg-ink' => !in_array($ev->type, ['bounced','failed','complained'])])></span>
-                        <time class="mono w-24 shrink-0 text-muted" datetime="{{ $ev->occurred_at->toIso8601String() }}">{{ $ev->occurred_at->format('H:i:s.v') }}</time>
+                        <time class="mono w-20 shrink-0 text-muted" datetime="{{ $ev->occurred_at->toIso8601String() }}">{{ $ev->occurred_at->format('H:i:s') }}</time>
                         <div class="min-w-0">
                             <p class="text-sm font-semibold capitalize">{{ $ev->type }}@if($ev->is_bot) <span class="mono font-normal text-muted">(bot / prefetch)</span>@endif</p>
                             @if($ev->data)<p class="mono break-all text-muted">{{ collect($ev->data)->map(fn ($v, $k) => $k.': '.(is_scalar($v) ? $v : json_encode($v)))->implode(' · ') }}</p>@endif

@@ -48,6 +48,65 @@ class IngestApiTest extends TestCase
         $this->postJson('/v1/emails', [])->assertStatus(401)->assertJsonPath('error.code', 'unauthenticated');
     }
 
+    public function test_test_key_cannot_create_live_keys(): void
+    {
+        [, $testKey] = app(ApiKeyService::class)->create($this->org, 'sandbox', 'test', ApiKeyService::ALL_SCOPES);
+
+        $this->withToken($testKey)->postJson('/v1/api-keys', ['name' => 'live-child', 'environment' => 'live'])
+            ->assertForbidden()->assertJsonPath('error.code', 'forbidden');
+
+        $this->assertSame(2, \App\Models\ApiKey::withoutGlobalScopes()->count());
+    }
+
+    public function test_child_key_defaults_to_parent_environment(): void
+    {
+        [, $testKey] = app(ApiKeyService::class)->create($this->org, 'sandbox', 'test', ApiKeyService::ALL_SCOPES);
+
+        $child = $this->withToken($testKey)->postJson('/v1/api-keys', ['name' => 'test-child'])
+            ->assertCreated()->assertJsonPath('environment', 'test')->assertJsonPath('scopes', ['emails:send']);
+
+        $this->assertStringStartsWith('psv_test_', $child->json('key'));
+    }
+
+    public function test_child_key_cannot_gain_scopes_its_parent_lacks(): void
+    {
+        [, $limitedKey] = app(ApiKeyService::class)->create($this->org, 'manager', 'live', ['api_keys:manage']);
+
+        $this->withToken($limitedKey)->postJson('/v1/api-keys', ['name' => 'sender', 'scopes' => ['emails:send']])
+            ->assertForbidden()->assertJsonPath('error.code', 'scope_missing');
+        $this->withToken($limitedKey)->postJson('/v1/api-keys', ['name' => 'default-sender'])
+            ->assertForbidden()->assertJsonPath('error.code', 'scope_missing');
+        $this->assertSame(2, \App\Models\ApiKey::withoutGlobalScopes()->count());
+
+        $this->withToken($limitedKey)->postJson('/v1/api-keys', ['name' => 'manager-child', 'scopes' => ['api_keys:manage']])
+            ->assertCreated()->assertJsonPath('scopes', ['api_keys:manage']);
+    }
+
+    public function test_child_keys_keep_domain_restrictions_across_generations(): void
+    {
+        $domainId = \App\Models\Domain::withoutGlobalScopes()->where('organization_id', $this->org->id)->value('id');
+        [, $limitedKey] = app(ApiKeyService::class)->create($this->org, 'restricted', 'live', ['api_keys:manage', 'emails:send'], [$domainId]);
+        $foreignOrg = Organization::create(['name' => 'Other', 'slug' => 'other']);
+
+        $child = $this->withToken($limitedKey)->postJson('/v1/api-keys', [
+            'name' => 'child', 'scopes' => ['api_keys:manage', 'emails:send'],
+            'domain_ids' => [], 'organization_id' => $foreignOrg->id,
+        ])->assertCreated()->assertJsonPath('domain_ids', [$domainId])->assertJsonPath('organization_id', $this->org->id);
+
+        $this->withToken($child->json('key'))->postJson('/v1/api-keys', ['name' => 'grandchild'])
+            ->assertCreated()->assertJsonPath('domain_ids', [$domainId]);
+    }
+
+    public function test_live_wildcard_key_can_create_narrower_test_key(): void
+    {
+        [, $adminKey] = app(ApiKeyService::class)->create($this->org, 'admin', 'live', ['*']);
+
+        $this->withToken($adminKey)->postJson('/v1/api-keys', [
+            'name' => 'test-child', 'environment' => 'test', 'scopes' => ['emails:send'],
+        ])->assertCreated()->assertJsonPath('environment', 'test')->assertJsonPath('scopes', ['emails:send'])
+            ->assertJsonPath('domain_ids', null);
+    }
+
     public function test_send_is_accepted_signed_and_delivered(): void
     {
         $res = $this->send()->assertStatus(202)->assertJsonPath('recipients.0.status', 'QUEUED');

@@ -167,12 +167,15 @@ function buildServer(mode) {
     });
 }
 
-// Sapu spool yatim > 1 jam (Laravel menghapus file setelah commit).
+// Sapu spool yatim > 1 jam (Laravel menghapus file setelah commit) + entri memori kedaluwarsa.
 setInterval(() => {
     for (const f of fs.readdirSync(cfg.spool)) {
         const p = path.join(cfg.spool, f);
         try { if (Date.now() - fs.statSync(p).mtimeMs > 3_600_000) fs.unlinkSync(p); } catch { /* sudah hilang */ }
     }
+    const now = Date.now();
+    for (const [ip, e] of fails) if (e.reset < now) fails.delete(ip);
+    for (const [h, e] of authCache) if (e.exp < now) authCache.delete(h);
 }, 600_000).unref();
 
 const servers = [];

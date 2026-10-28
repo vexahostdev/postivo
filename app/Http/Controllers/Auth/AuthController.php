@@ -63,7 +63,8 @@ class AuthController extends Controller
             $plan = \App\Support\Plans::get("free");
             $org = Organization::create([
                 'name' => $data['organization'],
-                'slug' => Str::slug($data['organization']).'-'.Str::lower(Str::random(5)),
+                // Batasi slug dasar agar nama panjang tidak melebihi kolom 80 (MySQL strict mode).
+                'slug' => Str::limit(Str::slug($data['organization']) ?: 'org', 70, '').'-'.Str::lower(Str::random(5)),
                 'plan' => 'free', 'monthly_quota' => $plan['monthly_quota'], 'daily_limit' => $plan['daily_limit'],
             ]);
             Member::create(['organization_id' => $org->id, 'user_id' => $user->id, 'role' => MemberRole::OWNER]);

@@ -6,9 +6,11 @@ use App\Http\Controllers\Controller;
 use App\Models\Order;
 use App\Models\WebhookEvent;
 use App\Services\BillingService;
+use App\Support\XenditPayload;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Validator;
 use Throwable;
 
 /**
@@ -30,7 +32,11 @@ class XenditWebhookController extends Controller
             return response()->json(['status' => 'error', 'message' => 'Unauthorized.'], 403);
         }
 
-        $p = $request->all();
+        $validator = Validator::make($request->all(), XenditPayload::RULES);
+        if ($validator->fails()) {
+            return response()->json(['status' => 'error', 'message' => 'Invalid callback payload.', 'errors' => $validator->errors()], 422);
+        }
+        $p = $validator->validated();
         $externalId = (string) ($p['external_id'] ?? '');
         $invoiceId = (string) ($p['id'] ?? '');
         $status = strtoupper((string) ($p['status'] ?? ''));
@@ -86,12 +92,12 @@ class XenditWebhookController extends Controller
 
     private function authorized(Request $request): bool
     {
-        $internal = (string) $request->header('X-Internal-Token');
-        $callback = (string) ($request->header('x-callback-token') ?? $request->input('callback_token'));
+        $internal = $request->header('X-Internal-Token');
+        $callback = $request->header('x-callback-token') ?? $request->input('callback_token');
         $expInternal = (string) config('postivo.billing.internal_secret');
         $expCallback = (string) config('postivo.billing.xendit_webhook_token');
 
-        return ($expInternal !== '' && $internal !== '' && hash_equals($expInternal, $internal))
-            || ($expCallback !== '' && $callback !== '' && hash_equals($expCallback, $callback));
+        return ($expInternal !== '' && is_string($internal) && hash_equals($expInternal, $internal))
+            || ($expCallback !== '' && is_string($callback) && hash_equals($expCallback, $callback));
     }
 }

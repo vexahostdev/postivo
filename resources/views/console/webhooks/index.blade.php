@@ -38,7 +38,7 @@
                 <div class="flex items-center gap-2">
                     <span @class(['mono border px-1.5 py-0.5 text-[11px] uppercase', 'border-ok text-ok' => $e->is_active, 'border-red-500 text-red-500' => !$e->is_active])>{{ $e->is_active ? 'Aktif' : 'Nonaktif' }}</span>
                     @if($canWrite)<form method="POST" action="{{ route('console.webhooks.toggle', $e->id) }}">@csrf<button class="btn-outline btn-sm">{{ $e->is_active ? 'Nonaktifkan' : 'Aktifkan' }}</button></form>@endif
-                    @if($isAdmin)<form method="POST" action="{{ route('console.webhooks.destroy', $e->id) }}" onsubmit="return confirm('Hapus webhook ini?')">@csrf @method('DELETE')<button class="btn-danger btn-sm" aria-label="Hapus"><x-icon name="trash" class="size-3.5" /></button></form>@endif
+                    @if($isAdmin)<form method="POST" action="{{ route('console.webhooks.destroy', $e->id) }}" data-confirm="Hapus webhook ini?">@csrf @method('DELETE')<button class="btn-danger btn-sm" aria-label="Hapus"><x-icon name="trash" class="size-3.5" /></button></form>@endif
                 </div>
             </div>
         @endforeach

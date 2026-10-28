@@ -11,6 +11,7 @@ storage/framework/cache/*
 storage/framework/sessions/*
 storage/framework/views/*
 storage/app/spool
+backups
 database/*.sqlite
 .env
 .env.*

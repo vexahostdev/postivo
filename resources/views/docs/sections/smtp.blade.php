@@ -1,6 +1,7 @@
 <section id="smtp-kredensial" data-doc="Kredensial & port SMTP" data-group="SMTP Relay">
     <h2>Kredensial &amp; port SMTP</h2>
     <p>Pakai Postivo sebagai relay untuk aplikasi/CMS yang hanya mendukung SMTP (WordPress, Laravel Mail, Nodemailer, dst.).</p>
+    <div class="overflow-x-auto">
     <table>
         <tbody>
             <tr><th>Host</th><td><code>{{ config('postivo.smtp.host') }}</code></td></tr>
@@ -11,6 +12,7 @@
             <tr><th>Batas</th><td>25 MB per pesan · 50 penerima per transaksi</td></tr>
         </tbody>
     </table>
+    </div>
     <ul>
         <li>Domain pengirim ditentukan oleh header <code>From</code>; <code>MAIL FROM</code> amplop diabaikan (Postivo memakai Return-Path sendiri untuk menangkap bounce).</li>
         <li>Penerima di amplop yang tidak tercantum di header <code>To</code>/<code>Cc</code> diperlakukan sebagai <b>Bcc</b>.</li>
@@ -21,6 +23,7 @@
 <section id="smtp-kode" data-doc="Kode balasan SMTP" data-group="SMTP Relay">
     <h2>Kode balasan SMTP</h2>
     <p>Pesan dianggap diterima (<code>250</code>) hanya setelah tersimpan dan masuk antrean. Karena validasi berjalan sebelum balasan dikirim, penolakan datang dengan kode yang tepat.</p>
+    <div class="overflow-x-auto">
     <table>
         <thead><tr><th>Kode</th><th>Arti</th><th>Tindakan klien</th></tr></thead>
         <tbody>
@@ -36,6 +39,7 @@
             <tr><td><code>421 4.7.0</code></td><td>Terlalu banyak gagal autentikasi</td><td>Tunggu ±10 menit</td></tr>
         </tbody>
     </table>
+    </div>
 </section>
 
 <section id="smtp-contoh" data-doc="Contoh koneksi SMTP" data-group="SMTP Relay">

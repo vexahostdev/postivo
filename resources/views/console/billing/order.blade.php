@@ -11,7 +11,7 @@
     <span class="mono border px-1.5 py-0.5 uppercase {{ $tone }}">{{ $order->status }}</span>
 </x-page-header>
 
-<div class="grid gap-6 lg:grid-cols-3">
+<div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
     <section class="card lg:col-span-2">
         <div class="border-b border-line px-5 py-3"><h2 class="kicker">Status pembayaran</h2></div>
         <div class="space-y-4 p-6 text-sm">

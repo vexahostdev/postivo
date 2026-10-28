@@ -61,6 +61,8 @@ return [
         'doh_primary' => 'https://cloudflare-dns.com/dns-query',
         'doh_fallback' => 'https://dns.google/resolve',
         'dkim_selector' => 'postivo',
+        // Path openssl.cnf khusus (Windows/mesin tanpa config default); null = pakai default PHP.
+        'openssl_conf' => env('POSTIVO_OPENSSL_CONF'),
         // Lokal tanpa DNS publik: set POSTIVO_DNS_ASSUME_OK=true agar domain bisa langsung ACTIVE.
         'assume_ok' => (bool) env('POSTIVO_DNS_ASSUME_OK', false),
     ],

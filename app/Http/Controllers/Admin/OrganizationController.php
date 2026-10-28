@@ -119,9 +119,10 @@ class OrganizationController extends AdminController
         abort_unless($owner && ! $owner->isStaff(), 422, 'Owner organisasi tidak tersedia untuk impersonasi.');
 
         $adminId = Auth::id();
+        $passwordHash = Auth::guard()->hashPasswordForCookie(Auth::user()->getAuthPassword());
         AdminAudit::log('impersonate.start', 'organization', $id, $id, $reason, ['as_user' => $owner->id]);
-        Auth::login($owner); // tanpa regenerate sesi: penanda di bawah tetap ada
-        session(['impersonator_id' => $adminId, 'org_id' => $id]);
+        Auth::login($owner);
+        session(['impersonator_id' => $adminId, 'impersonator_password_hash' => $passwordHash, 'org_id' => $id]);
 
         return redirect()->route('console.dashboard');
     }

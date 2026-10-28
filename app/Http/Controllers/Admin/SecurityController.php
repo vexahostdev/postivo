@@ -24,6 +24,8 @@ class SecurityController extends AdminController
 
     public function enable(Request $request): RedirectResponse
     {
+        abort_if($request->user()->hasTwoFactor(), 403, '2FA sudah aktif.');
+
         $data = $request->validate(['code' => ['required', 'string']]);
         $secret = $request->session()->get('admin_2fa_pending');
         if (! $secret || ! Totp::verify($secret, $data['code'])) {
@@ -31,7 +33,10 @@ class SecurityController extends AdminController
         }
         $request->user()->forceFill(['two_factor_secret' => $secret, 'two_factor_confirmed_at' => now()])->save();
         $request->session()->forget('admin_2fa_pending');
-        $request->session()->put('admin_2fa_at', time());
+        $request->session()->put([
+            'admin_2fa_at' => time(),
+            'admin_2fa_fingerprint' => $request->user()->twoFactorFingerprint(),
+        ]);
         AdminAudit::log('staff.2fa_enabled', 'user', $request->user()->id);
 
         return redirect()->route('admin.dashboard')->with('status', '2FA aktif.');
@@ -56,7 +61,10 @@ class SecurityController extends AdminController
             return back()->withErrors(['code' => 'Kode salah.']);
         }
         RateLimiter::clear($key);
-        $request->session()->put('admin_2fa_at', time());
+        $request->session()->put([
+            'admin_2fa_at' => time(),
+            'admin_2fa_fingerprint' => $request->user()->twoFactorFingerprint(),
+        ]);
 
         return redirect()->to($request->session()->pull('admin_intended', route('admin.dashboard')));
     }

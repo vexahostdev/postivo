@@ -5,7 +5,7 @@
 <x-page-header title="Emails" sub="Log semua email — satu baris per penerima." />
 
 <form method="GET" class="mb-4 flex flex-wrap gap-2">
-    <input class="input max-w-xs" name="q" value="{{ request('q') }}" placeholder="Cari penerima atau subjek" aria-label="Cari">
+    <input class="input min-w-0 flex-1 sm:max-w-xs" name="q" value="{{ request('q') }}" placeholder="Cari penerima atau subjek" aria-label="Cari">
     <select class="input w-auto" name="status" aria-label="Filter status" onchange="this.form.submit()">
         <option value="">Semua status</option>
         @foreach($statuses as $s)<option value="{{ $s }}" @selected(request('status') === $s)>{{ ucfirst(strtolower($s)) }}</option>@endforeach
@@ -24,7 +24,7 @@
             @foreach($dispatches as $d)
                 <tr class="hover:bg-paper">
                     <td class="td mono"><a class="underline-offset-2 hover:underline" href="{{ route('console.emails.show', $d->id) }}">{{ $d->recipient }}</a></td>
-                    <td class="td max-w-xs truncate">{{ $d->email->subject }}</td>
+                    <td class="td"><p class="max-w-xs truncate" title="{{ $d->email->subject }}">{{ $d->email->subject }}</p></td>
                     <td class="td"><x-status-pill :status="$d->status" /></td>
                     <td class="td mono text-muted">{{ $d->relay ?? '—' }}</td>
                     <td class="td mono text-muted" title="{{ $d->created_at }}">{{ $d->created_at->diffForHumans() }}</td>

@@ -56,7 +56,7 @@ docker compose --env-file .env.production logs -f app
 1. **Admin → Alat & diagnostik**: uji koneksi Brevo, kirim email uji ke Gmail, cek header SPF/DKIM/DMARC = pass.
 2. Naikkan `POSTIVO_CSP` dari `report` ke `enforce` setelah memeriksa konsol browser tidak melaporkan pelanggaran.
 3. Daftarkan monitor uptime ke `https://postivo.my.id/readyz` (503 bila DB/cache/scheduler bermasalah).
-4. Pasang cron backup: `15 3 * * * /opt/postivo/deploy/backup.sh` dan salin hasilnya keluar server. Uji `deploy/restore.sh` di staging.
+4. Pasang cron backup: `15 3 * * * /opt/postivo/deploy/backup.sh` dan salin hasilnya keluar server. Hasil default berada di `/opt/postivo-backups`, di luar build context; `POSTIVO_BACKUP_DIR` dapat menunjuk lokasi eksternal lain. Uji `deploy/restore.sh` di staging. Backup lama di checkout harus dipindahkan keluar sebelum rebuild; bila sudah pernah ikut image, batasi akses image tersebut dan rotasi kredensial yang terdampak.
 5. VexaHost: pastikan forwarder `PSV-` sudah ter-deploy, lalu buat satu invoice uji di staging dengan key Xendit asli.
 6. Ganti `INTERNAL_WEBHOOK_SECRET` di VexaHost dan Postivo dengan nilai acak yang sama.
 
@@ -68,6 +68,14 @@ git pull && docker compose --env-file .env.production up -d --build
 
 Rollback: `git checkout <tag-lama>` lalu perintah yang sama. Migrasi bersifat maju; backup dulu sebelum rilis yang mengubah skema.
 
+Untuk upgrade keamanan pada instalasi lama:
+
+- Putuskan sesi web lama saat rollout agar sesi yang belum memiliki binding password tidak terbawa.
+- Jika callback pernah mengirim `callback_token` di body, rotasi token Xendit/forwarder yang terdampak dan bersihkan nilai lama dari `webhook_events.payload`, `orders.raw_payload`, session, serta salinan backup sesuai kebijakan retensi. Filter aplikasi mencegah tampilan/pemrosesan ulang token, bukan menghapus salinan historis di database.
+- Tinjau akun demo yang mungkin dibuat oleh seeder lama. Pembatasan baru mencegah seed demo di luar `local`/`testing`, tetapi tidak otomatis menghapus akun yang sudah ada.
+- Jalankan tes sesi, billing, lifecycle domain/webhook, serta kompetisi kuota dan pembatalan pada MySQL di staging terisolasi sebelum rollout. Sertakan admission pertama lintas organisasi, replay dalam transaksi REPEATABLE READ, dan retry deadlock dengan lampiran. Pemanggil yang membuka transaksi luar harus mengulang keseluruhan transaksi itu bila deadlock, bukan hanya savepoint admission. Tes regresi patch ini belum dijalankan di lingkungan pengembangan ini.
+- Pantau exception notifikasi/webhook/antrean. Kegagalan publikasi tidak membatalkan email yang sudah committed; scheduler `postivo:requeue-stuck` memulihkan dispatch QUEUED yang tertinggal setelah 15 menit, tetapi tidak membangun ulang event/webhook yang gagal dicatat. Pastikan scheduler aktif sebelum menerima traffic.
+
 ## Belum diuji di sini
 
-`docker-compose.yml`, `Dockerfile`, dan `deploy/*` baru divalidasi sintaksnya (`docker compose config`); build image dan jalannya stack belum dicoba karena Docker tidak berjalan di mesin pengembangan. Jalankan di staging terlebih dulu dan perbaiki bila ada selisih.
+Pemeriksaan terdahulu hanya mencatat validasi konfigurasi Compose (`docker compose config`), bukan eksekusi stack. Patch keamanan saat ini belum menjalani tes aplikasi, lint PHP, tes script backup/restore, build image, atau pemeriksaan browser karena sandbox target belum tersedia. Validasi konfigurasi lama bukan bukti validasi perubahan terbaru; jalankan pemeriksaan tersebut di staging terisolasi terlebih dulu.

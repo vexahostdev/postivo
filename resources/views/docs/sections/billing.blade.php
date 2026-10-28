@@ -1,5 +1,6 @@
 <section id="paket" data-doc="Paket & batas" data-group="Paket & Penagihan">
     <h2>Paket &amp; batas</h2>
+    <div class="overflow-x-auto">
     <table>
         <thead><tr><th>Paket</th><th>Harga / bulan</th><th>Kuota email / bulan</th><th>Batas harian</th></tr></thead>
         <tbody>
@@ -8,6 +9,7 @@
             @endforeach
         </tbody>
     </table>
+    </div>
     <p>Kuota direset setiap awal bulan kalender. Batas per pesan: 25 MB, 50 penerima. Bila paket berbayar berakhir tanpa perpanjangan, akun otomatis kembali ke Free — data, domain, dan API key tetap aman.</p>
 </section>
 
@@ -30,6 +32,7 @@
 <section id="notifikasi" data-doc="Email dari Postivo" data-group="Paket & Penagihan">
     <h2>Email dari Postivo</h2>
     <p>Email sistem dikirim dari <code>noreply@postivo.my.id</code>; balasan diarahkan ke <code>{{ config('postivo.support_email') }}</code>. Pastikan keduanya tidak masuk filter spam Anda.</p>
+    <div class="overflow-x-auto">
     <table>
         <thead><tr><th>Email</th><th>Kapan dikirim</th><th>Penerima</th></tr></thead>
         <tbody>
@@ -45,6 +48,7 @@
             <tr><td>Paket akan berakhir / berakhir</td><td>7 hari, 1 hari, dan saat berakhir</td><td>Owner &amp; admin</td></tr>
         </tbody>
     </table>
+    </div>
 </section>
 
 <section id="keamanan" data-doc="Keamanan & kepatuhan" data-group="Operasional">

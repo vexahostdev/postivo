@@ -20,7 +20,7 @@
         <li>Kirim email pertama:</li>
     </ol>
     <div x-data="{ t: 'curl' }">
-        <div class="mt-3 flex gap-1" role="tablist">@foreach(['curl', 'node', 'php', 'python'] as $l)<button type="button" role="tab" :aria-selected="t === '{{ $l }}'" @click="t = '{{ $l }}'" class="px-2.5 py-1 font-mono text-[11px] uppercase tracking-wider" :class="t === '{{ $l }}' ? 'bg-red-500 text-white' : 'border border-line text-muted'">{{ $l }}</button>@endforeach</div>
+        <div class="mt-3 flex gap-1" role="tablist">@foreach(['curl', 'node', 'php', 'python'] as $l)<button type="button" role="tab" :aria-selected="t === '{{ $l }}'" @click="t = '{{ $l }}'" class="min-h-8 px-2.5 py-1 font-mono text-[11px] uppercase tracking-wider" :class="t === '{{ $l }}' ? 'bg-red-500 text-white' : 'border border-line text-muted'">{{ $l }}</button>@endforeach</div>
         <div x-show="t === 'curl'"><x-code title="curl">@verbatimcurl https://api.postivo.my.id/v1/emails \
   -H "Authorization: Bearer $POSTIVO_API_KEY" \
   -H "Content-Type: application/json" \
@@ -85,6 +85,7 @@ print(r.status_code, r.json())  # 202@endverbatim</x-code></div>
 <section id="autentikasi" data-doc="Autentikasi & API key" data-group="Mulai Cepat">
     <h2>Autentikasi &amp; API key</h2>
     <p>Kirim API key di header <code>Authorization: Bearer psv_live_…</code>. Format key: <code>psv_{live|test}_</code> + 32 karakter. Key disimpan sebagai hash — Postivo tidak bisa menampilkannya lagi, jadi simpan di secret manager, bukan di kode.</p>
+    <div class="overflow-x-auto">
     <table>
         <thead><tr><th>Scope</th><th>Mengizinkan</th></tr></thead>
         <tbody>
@@ -96,6 +97,7 @@ print(r.status_code, r.json())  # 202@endverbatim</x-code></div>
             <tr><td><code>api_keys:manage</code></td><td>Buat/cabut API key</td></tr>
         </tbody>
     </table>
+    </div>
     <x-callout type="warn" title="Praktik terbaik">Beri tiap aplikasi key sendiri dengan scope seminimal mungkin (cukup <code>emails:send</code> untuk aplikasi biasa). Cabut key yang bocor dari halaman <b>API Keys</b> — efeknya langsung. Key <code>live</code> hanya bisa dibuat setelah email akun terverifikasi.</x-callout>
     <x-code title="401 — key salah / dicabut" lang="json">@verbatim{ "error": { "code": "unauthenticated", "message": "Invalid or missing API key.", "request_id": "9b2c…" } }@endverbatim</x-code>
 </section>

@@ -7,7 +7,7 @@
 @if($canWrite)
 <form method="POST" action="{{ route('console.api-keys.store') }}" class="card mb-6 space-y-4 p-5">
     @csrf
-    <div class="grid gap-4 sm:grid-cols-2">
+    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div>
             <label class="label" for="name">Nama</label>
             <input class="input" id="name" name="name" value="{{ old('name') }}" placeholder="mis. Cravacloud production" required>
@@ -49,7 +49,7 @@
                     <td class="td mono text-muted">{{ implode(' ', $k->scopes) }}</td>
                     <td class="td mono text-muted">{{ $k->last_used_at?->diffForHumans() ?? 'belum pernah' }}</td>
                     <td class="td text-right">
-                        @if($isAdmin)<form method="POST" action="{{ route('console.api-keys.destroy', $k->id) }}" onsubmit="return confirm('Cabut key {{ $k->name }}? Aplikasi yang memakainya akan langsung ditolak.')">@csrf @method('DELETE')
+                        @if($isAdmin)<form method="POST" action="{{ route('console.api-keys.destroy', $k->id) }}" data-confirm="Cabut key {{ $k->name }}? Aplikasi yang memakainya akan langsung ditolak.">@csrf @method('DELETE')
                             <button class="btn-danger btn-sm">Cabut</button></form>@endif
                     </td>
                 </tr>

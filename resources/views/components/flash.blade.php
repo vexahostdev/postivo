@@ -11,7 +11,7 @@
                 <p class="kicker mb-2">Tampil sekali — simpan sekarang</p>
                 <div class="flex items-center gap-2">
                     <code class="mono flex-1 break-all border border-line bg-white px-3 py-2">{{ session('reveal') }}</code>
-                    <button type="button" class="btn-outline btn-sm" @click="copy()"><x-icon name="copy" class="size-3.5" /><span x-text="copied ? 'Tersalin' : 'Salin'"></span></button>
+                    <button type="button" class="btn-outline btn-sm shrink-0" @click="copy()"><x-icon name="copy" class="size-3.5" /><span x-show="!copied">Salin</span><span x-cloak x-show="copied">Tersalin</span></button>
                 </div>
             </div>
         @endif

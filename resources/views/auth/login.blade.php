@@ -19,7 +19,7 @@
         </div>
         <div class="flex items-center justify-between">
             <label class="flex items-center gap-2 text-sm"><input type="checkbox" name="remember" class="accent-red-500"> Ingat saya</label>
-            <a href="{{ route('password.request') }}" class="text-sm text-muted underline">Lupa kata sandi?</a>
+            <a href="{{ route('password.request') }}" class="inline-flex min-h-9 items-center text-sm text-muted underline">Lupa kata sandi?</a>
         </div>
         <button class="btn-primary w-full">Masuk</button>
     </form>

@@ -10,7 +10,7 @@
     {!! \App\Support\Brand::headStyle() !!}
 </head>
 <body>
-<div class="grid min-h-screen lg:grid-cols-2">
+<div class="grid grid-cols-1 min-h-screen lg:grid-cols-2">
     <div class="hidden flex-col justify-between border-r border-line p-10 lg:flex">
         <a href="{{ route('landing') }}"><img src="{{ \App\Support\Brand::logo() }}" alt="{{ \App\Support\Brand::name() }}" class="h-9 w-auto"></a>
         <div>

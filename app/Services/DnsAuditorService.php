@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\DnsRecord;
 use App\Models\Domain;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Throwable;
 
@@ -17,49 +18,63 @@ class DnsAuditorService
     {
         $looked = config('postivo.dns.assume_ok') ? [] : $this->lookupMany($domain->records->map(fn ($r) => [$r->type, $r->name])->all());
 
-        foreach ($domain->records as $rec) {
-            $seen = config('postivo.dns.assume_ok') ? [$rec->value] : ($looked[$rec->type.'|'.$rec->name] ?? null);
-            if ($seen === null) {
-                $rec->update(['last_checked_at' => now()]);
+        // DNS I/O must finish before locking; never persist the caller's stale status.
+        return DB::transaction(function () use ($domain, $looked) {
+            $domain = Domain::withoutGlobalScope('organization')
+                ->lockForUpdate()->findOrFail($domain->getKey());
+            $domain->load('records');
 
-                continue;
+            foreach ($domain->records as $rec) {
+                $seen = config('postivo.dns.assume_ok') ? [$rec->value] : ($looked[$rec->type.'|'.$rec->name] ?? null);
+                if ($seen === null) {
+                    $rec->update(['last_checked_at' => now()]);
+
+                    continue;
+                }
+                $rec->update([
+                    'is_verified' => $this->matches($rec, $seen),
+                    'last_seen_value' => implode(' | ', $seen) ?: null,
+                    'last_checked_at' => now(),
+                ]);
             }
-            $rec->update([
-                'is_verified' => $this->matches($rec, $seen),
-                'last_seen_value' => implode(' | ', $seen) ?: null,
-                'last_checked_at' => now(),
-            ]);
-        }
 
-        $domain->load('records');
-        $required = $domain->records->where('is_required', true);
-        $allOk = $required->isNotEmpty() && $required->every->is_verified;
+            $required = $domain->records->where('is_required', true);
+            $allOk = $required->isNotEmpty() && $required->every->is_verified;
 
-        $before = $domain->status;
-        $domain->fill(['last_audit_at' => now()]);
-        if ($allOk) {
-            $domain->status = 'ACTIVE';
-            $domain->verified_at ??= now();
-        } elseif ($domain->status === 'ACTIVE') {
-            $domain->status = 'FAILED';
-        } elseif ($domain->audit_started_at && $domain->audit_started_at->lt(now()->subDays(7))) {
-            $domain->status = 'FAILED';
-        }
-        $tracking = $domain->records->firstWhere('purpose', 'tracking');
-        // Mode lokal (assume_ok) tidak punya DNS nyata → pakai host tracking bawaan aplikasi.
-        $domain->tracking_host = ! config('postivo.dns.assume_ok') && $tracking?->is_verified ? $tracking->name : null;
-        $domain->save();
-
-        if ($before !== $domain->status) {
-            $org = \App\Models\Organization::find($domain->organization_id);
-            if ($domain->status === 'ACTIVE') {
-                $org?->notifyAdmins(new \App\Notifications\DomainVerifiedNotification($domain));
-            } elseif ($before === 'ACTIVE' && $domain->status === 'FAILED') {
-                $org?->notifyAdmins(new \App\Notifications\DomainFailedNotification($domain));
+            $before = $domain->status;
+            $domain->fill(['last_audit_at' => now()]);
+            if ($allOk) {
+                $domain->verified_at ??= now();
             }
-        }
+            if ($before !== 'SUSPENDED') {
+                if ($allOk) {
+                    $domain->status = 'ACTIVE';
+                } elseif ($before === 'ACTIVE') {
+                    $domain->status = 'FAILED';
+                } elseif ($domain->audit_started_at && $domain->audit_started_at->lt(now()->subDays(7))) {
+                    $domain->status = 'FAILED';
+                }
+            }
+            $tracking = $domain->records->firstWhere('purpose', 'tracking');
+            // Mode lokal (assume_ok) tidak punya DNS nyata → pakai host tracking bawaan aplikasi.
+            $domain->tracking_host = ! config('postivo.dns.assume_ok') && $tracking?->is_verified ? $tracking->name : null;
+            $domain->save();
 
-        return $domain;
+            if ($before !== $domain->status) {
+                $notification = null;
+                if ($domain->status === 'ACTIVE') {
+                    $notification = new \App\Notifications\DomainVerifiedNotification(clone $domain);
+                } elseif ($before === 'ACTIVE' && $domain->status === 'FAILED') {
+                    $notification = new \App\Notifications\DomainFailedNotification(clone $domain);
+                }
+                if ($notification) {
+                    $organizationId = $domain->organization_id;
+                    DB::afterCommit(fn () => \App\Models\Organization::find($organizationId)?->notifyAdmins($notification));
+                }
+            }
+
+            return $domain;
+        });
     }
 
     private function matches(DnsRecord $rec, array $seen): bool

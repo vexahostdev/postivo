@@ -3,12 +3,15 @@
 namespace Tests\Feature;
 
 use App\Enums\MemberRole;
+use App\Http\Middleware\EnsureValidImpersonation;
 use App\Models\AdminAuditLog;
 use App\Models\Member;
 use App\Models\Order;
 use App\Models\Organization;
+use App\Models\OrganizationInvitation;
 use App\Models\User;
 use App\Notifications\OrganizationSuspendedNotification;
+use App\Notifications\VerifyEmailNotification;
 use App\Services\ApiKeyService;
 use App\Services\BillingService;
 use App\Services\DnsAuditorService;
@@ -21,6 +24,7 @@ use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Storage;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
 class AdminPanelTest extends TestCase
@@ -68,6 +72,7 @@ class AdminPanelTest extends TestCase
         $finance = $this->staff('finance');
         $this->actingAs($this->staff('support'))
             ->post("/admin/organizations/{$this->org->id}/plan", ['plan' => 'starter', 'reason' => 'kompensasi'])->assertForbidden();
+        $this->flushSession(); // actingAs tidak mengganti binding password sesi pengguna sebelumnya.
         $this->actingAs($finance)
             ->post("/admin/organizations/{$this->org->id}/suspend", ['reason' => 'tes alasan'])->assertForbidden();
         $this->post('/admin/settings', ['reason' => 'tes alasan'])->assertForbidden();
@@ -110,6 +115,116 @@ class AdminPanelTest extends TestCase
         $this->assertAuthenticatedAs($admin);
         $this->assertSame(['impersonate.start', 'impersonate.stop'], AdminAuditLog::orderBy('id')->pluck('action')->all());
         $this->assertSame($admin->id, AdminAuditLog::where('action', 'impersonate.stop')->value('admin_id'));
+        $this->get(route('admin.organizations.show', $this->org->id))->assertOk();
+    }
+
+    public static function invalidImpersonators(): array
+    {
+        return [
+            'permission revoked' => [['platform_role' => 'finance']],
+            'staff role removed' => [['platform_role' => null]],
+            'disabled' => [['disabled_at' => '2025-01-01 00:00:00']],
+            'password reset' => [['password' => 'new-staff-password-123456']],
+            'deleted' => [null],
+        ];
+    }
+
+    private function beginImpersonation(): User
+    {
+        $admin = $this->staff('support');
+        $this->actingAs($admin)->post("/admin/organizations/{$this->org->id}/impersonate", ['reason' => 'tiket 123'])->assertRedirect('/console');
+        $this->assertAuthenticatedAs($this->owner);
+
+        return $admin;
+    }
+
+    private function invalidateImpersonator(?array $changes): void
+    {
+        $admin = $this->beginImpersonation();
+        if ($changes === null) {
+            $admin->delete();
+        } else {
+            $admin->forceFill($changes)->save();
+        }
+    }
+
+    #[DataProvider('invalidImpersonators')]
+    public function test_invalid_impersonator_stop_logs_out_before_any_console_write(?array $changes): void
+    {
+        $this->invalidateImpersonator($changes);
+        $this->assertInvalidImpersonationStop();
+    }
+
+    #[DataProvider('invalidImpersonators')]
+    public function test_stop_controller_independently_rejects_invalid_impersonators(?array $changes): void
+    {
+        $this->invalidateImpersonator($changes);
+        $this->withoutMiddleware(EnsureValidImpersonation::class);
+        $this->assertInvalidImpersonationStop();
+    }
+
+    private function assertInvalidImpersonationStop(): void
+    {
+        $oldToken = session()->token();
+        $oldSessionId = session()->getId();
+        $this->post('/impersonate/stop')->assertRedirect('/login')
+            ->assertSessionMissing('impersonator_id')->assertSessionMissing('org_id')->assertSessionHas('_token');
+        $this->assertGuest();
+        $this->assertNotSame($oldToken, session()->token());
+        $this->assertNotSame($oldSessionId, session()->getId());
+        $this->withMiddleware(EnsureValidImpersonation::class);
+        $this->post('/console/domains', ['domain' => 'mail.acme.test'])->assertRedirect('/login');
+        $this->assertDatabaseCount('domains', 0);
+    }
+
+    #[DataProvider('invalidImpersonators')]
+    public function test_invalid_impersonator_is_rejected_even_on_public_reads(?array $changes): void
+    {
+        $this->invalidateImpersonator($changes);
+        $oldToken = session()->token();
+        $this->get('/docs')->assertRedirect('/login')->assertSessionMissing('impersonator_id');
+        $this->assertGuest();
+        $this->assertNotSame($oldToken, session()->token());
+        $this->get('/console')->assertRedirect('/login');
+    }
+
+    public function test_impersonation_blocks_invitation_acceptance_and_verification_resend(): void
+    {
+        Notification::fake();
+        $otherOrg = Organization::create(['name' => 'Other', 'slug' => 'other']);
+        $token = 'dummy-invitation-token';
+        $invitation = OrganizationInvitation::create([
+            'organization_id' => $otherOrg->id, 'email' => $this->owner->email, 'role' => 'developer',
+            'token_hash' => hash('sha256', $token), 'expires_at' => now()->addDay(),
+        ]);
+        $this->beginImpersonation();
+        $this->get("/invitations/{$token}")->assertOk();
+        $this->head('/console')->assertOk();
+        $this->post("/invitations/{$token}")->assertForbidden();
+        $this->assertNull($invitation->refresh()->accepted_at);
+        $this->assertDatabaseMissing('organization_members', ['organization_id' => $otherOrg->id, 'user_id' => $this->owner->id]);
+        $this->assertSame($this->org->id, session('org_id'));
+        $this->post('/verify-email/resend')->assertForbidden();
+        Notification::assertNotSentTo($this->owner, VerifyEmailNotification::class);
+    }
+
+    public function test_impersonated_customer_can_log_out(): void
+    {
+        $this->beginImpersonation();
+        $oldToken = session()->token();
+        $this->post('/logout')->assertRedirect('/')
+            ->assertSessionMissing('impersonator_id')->assertSessionMissing('org_id');
+        $this->assertGuest();
+        $this->assertNotSame($oldToken, session()->token());
+        $this->post('/console/domains', ['domain' => 'mail.acme.test'])->assertRedirect('/login');
+        $this->assertDatabaseCount('domains', 0);
+    }
+
+    public function test_web_callbacks_without_an_impersonator_marker_are_not_blocked(): void
+    {
+        $this->app['router']->middleware('web')->post('/_test/callback', fn () => response()->noContent());
+        $this->post('/_test/callback')->assertNoContent();
+        $this->actingAs($this->owner)->post('/_test/callback')->assertNoContent();
     }
 
     public function test_plan_catalog_edits_flow_to_public_pages_and_checkout(): void
@@ -122,8 +237,10 @@ class AdminPanelTest extends TestCase
 
         $this->post('/admin/plans/growth', ['name' => 'Growth', 'price' => 299000, 'monthly_quota' => 100000, 'features' => 'x', 'sort' => 2, 'reason' => 'nonaktifkan sementara']); // is_active tidak dikirim = nonaktif
         $this->get('/')->assertDontSee('Rp 299.000');
+        $this->flushSession();
         $this->actingAs($this->owner)->get('/console/billing/checkout/growth')->assertNotFound();
         $this->post('/admin/plans/free', ['name' => 'Free', 'price' => 5, 'monthly_quota' => 1, 'reason' => 'coba ubah'])->assertNotFound(); // owner bukan staf
+        $this->flushSession();
         $this->actingAs($super)->post('/admin/plans/free', ['name' => 'Free', 'price' => 5, 'monthly_quota' => 1, 'is_active' => 1, 'reason' => 'coba ubah'])->assertStatus(422); // Free harus gratis
     }
 
@@ -155,6 +272,7 @@ class AdminPanelTest extends TestCase
         $other = $this->staff('finance');
         $this->post("/admin/users/{$other->id}/staff-role", ['platform_role' => 'support', 'reason' => 'pindah tugas'])->assertSessionHas('status');
         $this->assertSame('support', $other->refresh()->platform_role->value);
+        $this->flushSession();
         $this->actingAs($support)->post("/admin/users/{$other->id}/staff-role", ['platform_role' => 'superadmin', 'reason' => 'eskalasi'])->assertForbidden();
     }
 
@@ -172,14 +290,83 @@ class AdminPanelTest extends TestCase
         $this->get('/admin/security')->assertOk();
         $secret = session('admin_2fa_pending');
         $this->post('/admin/security/enable', ['code' => '000000'])->assertSessionHasErrors('code');
-        $this->post('/admin/security/enable', ['code' => Totp::code($secret)])->assertRedirect('/admin');
+        $this->post('/admin/security/enable', ['code' => Totp::code($secret)])->assertRedirect('/admin')
+            ->assertSessionHas('admin_2fa_fingerprint', $admin->fresh()->twoFactorFingerprint());
         $this->get('/admin')->assertOk();
 
         // Sesi baru (tanpa 2FA terverifikasi) harus ditantang.
         $this->flushSession();
         $this->get('/admin')->assertRedirect('/admin/two-factor');
-        $this->post('/admin/two-factor', ['code' => Totp::code($secret)])->assertRedirect();
+        $this->post('/admin/two-factor', ['code' => Totp::code($secret)])->assertRedirect()
+            ->assertSessionHas('admin_2fa_fingerprint', $admin->fresh()->twoFactorFingerprint());
         $this->get('/admin')->assertOk();
+    }
+
+    private function staffWithVerifiedFactor(): User
+    {
+        config(['postivo.admin.require_2fa' => true]);
+        $admin = $this->staff('superadmin');
+        $admin->forceFill(['two_factor_secret' => Totp::generateSecret(), 'two_factor_confirmed_at' => now()])->save();
+        $this->actingAs($admin)->post('/admin/two-factor', ['code' => Totp::code($admin->two_factor_secret)])->assertRedirect('/admin');
+        $this->get('/admin')->assertOk()->assertSessionHas('admin_2fa_fingerprint', $admin->twoFactorFingerprint());
+
+        return $admin;
+    }
+
+    public function test_replaced_factor_requires_a_new_challenge_despite_recent_assurance(): void
+    {
+        $admin = $this->staffWithVerifiedFactor();
+        $oldFingerprint = session('admin_2fa_fingerprint');
+        $replacement = Totp::generateSecret();
+        $admin->fresh()->forceFill(['two_factor_secret' => $replacement, 'two_factor_confirmed_at' => now()])->save();
+
+        // Muat ulang pengguna seperti request baru, tanpa menghapus assurance sesi lama.
+        $this->actingAs($admin->fresh())->get('/admin')->assertRedirect('/admin/two-factor')
+            ->assertSessionMissing('admin_2fa_at')->assertSessionMissing('admin_2fa_fingerprint');
+        $this->assertNotSame($oldFingerprint, $admin->fresh()->twoFactorFingerprint());
+        $this->post('/admin/two-factor', ['code' => Totp::code($replacement)])->assertRedirect('/admin')
+            ->assertSessionHas('admin_2fa_fingerprint', $admin->fresh()->twoFactorFingerprint());
+        $this->get('/admin')->assertOk();
+    }
+
+    public function test_reset_factor_discards_previous_session_assurance(): void
+    {
+        $admin = $this->staffWithVerifiedFactor();
+        $admin->fresh()->forceFill(['two_factor_secret' => null, 'two_factor_confirmed_at' => null])->save();
+        $this->actingAs($admin->fresh())->get('/admin')->assertRedirect('/admin/security')
+            ->assertSessionMissing('admin_2fa_at')->assertSessionMissing('admin_2fa_fingerprint');
+    }
+
+    public function test_timestamp_without_a_factor_fingerprint_is_not_assurance(): void
+    {
+        $this->staffWithVerifiedFactor();
+        session()->forget('admin_2fa_fingerprint');
+        $this->get('/admin')->assertRedirect('/admin/two-factor')->assertSessionMissing('admin_2fa_at');
+    }
+
+    public function test_factor_assurance_is_bound_to_the_user_even_with_the_same_secret(): void
+    {
+        $admin = $this->staffWithVerifiedFactor();
+        $other = $this->staff('support');
+        $other->forceFill(['two_factor_secret' => $admin->two_factor_secret, 'two_factor_confirmed_at' => now()])->save();
+        $this->assertNotSame($admin->twoFactorFingerprint(), $other->twoFactorFingerprint());
+
+        // Ganti fixture autentikasi saja; biarkan assurance pengguna sebelumnya untuk diuji.
+        session()->forget('password_hash_web');
+        $this->actingAs($other)->get('/admin')->assertRedirect('/admin/two-factor')
+            ->assertSessionMissing('admin_2fa_at')->assertSessionMissing('admin_2fa_fingerprint');
+    }
+
+    public function test_stale_pending_secret_cannot_replace_an_enabled_factor(): void
+    {
+        $admin = $this->staffWithVerifiedFactor();
+        $originalSecret = $admin->two_factor_secret;
+        $pending = Totp::generateSecret();
+        $this->withSession(['admin_2fa_pending' => $pending])
+            ->post('/admin/security/enable', ['code' => Totp::code($pending)])->assertForbidden();
+        $this->assertSame($originalSecret, $admin->fresh()->two_factor_secret);
+        $this->assertSame($admin->twoFactorFingerprint(), session('admin_2fa_fingerprint'));
+        $this->assertFalse(AdminAuditLog::where('action', 'staff.2fa_enabled')->exists());
     }
 
     public function test_reputation_levels_and_abuse_scan_auto_suspend(): void
@@ -243,8 +430,49 @@ class AdminPanelTest extends TestCase
         PlatformSettings::set('announcement', 'Maintenance Sabtu 02:00');
         \Illuminate\Support\Facades\Cache::forget('postivo:settings:v1');
 
+        $this->get('/register')->assertOk()->assertSee('Pendaftaran Akun Baru Sedang Dikunci');
         $this->post('/register', ['name' => 'N', 'organization' => 'O', 'email' => 'n@x.test', 'password' => 'password-123456', 'password_confirmation' => 'password-123456'])->assertSessionHasErrors('email');
         $this->assertFalse(User::where('email', 'n@x.test')->exists());
         $this->actingAs($this->owner)->get('/console')->assertSee('Maintenance Sabtu 02:00');
+    }
+
+    public function test_admin_can_toggle_signups_lock_and_unlock(): void
+    {
+        $super = $this->staff('superadmin');
+        PlatformSettings::set('signups_open', true);
+
+        // Kunci pendaftaran lewat aksi admin
+        $this->actingAs($super)->post('/admin/settings/toggle-signups', ['reason' => 'Testing staging lock'])
+            ->assertSessionHas('status');
+        $this->assertFalse((bool) PlatformSettings::get('signups_open'));
+        $this->assertTrue(AdminAuditLog::where('action', 'settings.signups_locked')->exists());
+
+        // Halaman register menampilkan banner terkunci dan form tidak muncul
+        $this->post('/logout');
+        $this->get('/register')->assertOk()->assertSee('Pendaftaran Akun Baru Sedang Dikunci');
+
+        // Buka kembali pendaftaran
+        $this->actingAs($super)->post('/admin/settings/toggle-signups', ['reason' => 'Testing staging unlock'])
+            ->assertSessionHas('status');
+        $this->assertTrue((bool) PlatformSettings::get('signups_open'));
+        $this->assertTrue(AdminAuditLog::where('action', 'settings.signups_opened')->exists());
+
+        // Pengguna non-staff tidak diizinkan mengubah
+        $this->flushSession();
+        $this->actingAs($this->owner)->post('/admin/settings/toggle-signups')->assertNotFound();
+
+        // Staff support/finance tidak diizinkan (hanya settings.manage / superadmin)
+        $this->flushSession();
+        $this->actingAs($this->staff('support'))->post('/admin/settings/toggle-signups')->assertForbidden();
+    }
+
+    public function test_registration_artisan_command_controls_lock(): void
+    {
+        Artisan::call('postivo:registration', ['action' => 'lock']);
+        $this->assertFalse((bool) PlatformSettings::get('signups_open'));
+
+        Artisan::call('postivo:registration', ['action' => 'status']);
+        $this->assertSame(0, Artisan::call('postivo:registration', ['action' => 'unlock']));
+        $this->assertTrue((bool) PlatformSettings::get('signups_open'));
     }
 }

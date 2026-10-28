@@ -22,9 +22,12 @@ class DeliverWebhookJob implements ShouldQueue
     public function handle(WebhookDispatcher $wh): void
     {
         $delivery = WebhookDelivery::find($this->deliveryId);
-        $endpoint = $delivery ? WebhookEndpoint::withoutGlobalScopes()->find($delivery->endpoint_id) : null;
+        $endpoint = $delivery ? WebhookEndpoint::withoutGlobalScope('organization')->find($delivery->endpoint_id) : null;
         $event = $delivery ? EmailEvent::withoutGlobalScopes()->find($delivery->event_id) : null;
-        if (! $delivery || ! $endpoint || ! $event || ! $endpoint->is_active) {
+        if (
+            ! $delivery || ! $endpoint || ! $event || ! $endpoint->is_active
+            || $endpoint->organization_id !== $event->organization_id
+        ) {
             return;
         }
 
@@ -79,7 +82,7 @@ class DeliverWebhookJob implements ShouldQueue
                 \App\Models\Organization::find($endpoint->organization_id)?->notifyAdmins(new \App\Notifications\WebhookDisabledNotification($endpoint));
             }
             if ($retry) {
-                self::dispatch($delivery->id)->onQueue('postivo_webhooks')->delay($backoff[$attempt - 1]);
+                self::dispatch($delivery->id)->onQueue('postivo_webhooks')->delay($backoff[$attempt - 1])->afterCommit();
             }
         }
     }

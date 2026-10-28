@@ -10,7 +10,7 @@
         <ol class="list-decimal space-y-2 pl-5 text-sm">
             <li>Buka aplikasi autentikator (Google Authenticator, Authy, 1Password).</li>
             <li>Tambahkan akun dengan memasukkan kunci ini secara manual:
-                <div class="my-2 break-all border border-line bg-paper px-3 py-2 font-mono text-base font-bold tracking-widest" x-data="clipboard(@js($secret))">{{ $secret }} <button type="button" class="btn-outline btn-sm ml-2" @click="copy()" x-text="copied ? 'Tersalin' : 'Salin'"></button></div>
+                <div class="my-2 break-all border border-line bg-paper px-3 py-2 font-mono text-base font-bold tracking-widest" x-data="clipboard(@js($secret))">{{ $secret }} <button type="button" class="btn-outline btn-sm ml-2" @click="copy()"><span x-show="!copied">Salin</span><span x-cloak x-show="copied">Tersalin</span></button></div>
                 <details class="text-muted"><summary class="cursor-pointer">URI otpauth (untuk impor)</summary><code class="mono break-all">{{ $uri }}</code></details>
             </li>
             <li>Masukkan kode 6 digit yang tampil untuk mengonfirmasi:</li>

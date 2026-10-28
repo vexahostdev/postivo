@@ -45,8 +45,9 @@ class OutboundRelayService
                 return ['relay' => $name, 'response' => '250 2.0.0 OK'];
             } catch (TransportExceptionInterface $e) {
                 $code = preg_match('/\b([245]\d{2})\b/', $e->getMessage(), $m) ? (int) $m[1] : null;
-                // Error permanen = bounce nyata, bukan alasan failover.
-                if ($code !== null && $code >= 500) {
+                // Hanya 55x penolakan penerima yang berarti bounce nyata. 5xx lain (auth 535,
+                // protokol 50x) = masalah relay/konfigurasi, jangan suppress penerima.
+                if (in_array($code, [550, 551, 553, 554], true)) {
                     throw new RelayException($e->getMessage(), false, $code);
                 }
                 $this->breakerFail($name);

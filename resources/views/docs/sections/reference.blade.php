@@ -1,6 +1,7 @@
 <section id="api-endpoint" data-doc="Daftar endpoint API" data-group="Referensi API">
     <h2>Daftar endpoint</h2>
     <p>Base URL <code>https://api.postivo.my.id/v1</code> · JSON UTF-8 · waktu ISO-8601 UTC. Setiap respons membawa <code>X-Request-Id</code> — sertakan saat melapor masalah.</p>
+    <div class="overflow-x-auto">
     <table>
         <thead><tr><th>Method &amp; path</th><th>Scope</th><th>Fungsi</th></tr></thead>
         <tbody>
@@ -19,12 +20,14 @@
             <tr><td><code>GET /ping</code></td><td>—</td><td>Cek ketersediaan API</td></tr>
         </tbody>
     </table>
+    </div>
     <p>Pagination memakai <b>cursor</b>: respons daftar berisi <code>{"data": […], "next_cursor": "…"}</code>; kirim nilainya sebagai <code>?cursor=</code> untuk halaman berikutnya.</p>
 </section>
 
 <section id="api-error" data-doc="Format & kode error" data-group="Referensi API">
     <h2>Format &amp; kode error</h2>
     <x-code title="Format seragam" lang="json">@verbatim{ "error": { "code": "validation_failed", "message": "…", "request_id": "9b2c…", "details": { "field": ["…"] } } }@endverbatim</x-code>
+    <div class="overflow-x-auto">
     <table>
         <thead><tr><th>HTTP</th><th><code>code</code></th><th>Penyebab</th></tr></thead>
         <tbody>
@@ -39,6 +42,7 @@
             <tr><td>5xx</td><td><code>internal_error</code></td><td>Gangguan di sisi Postivo — aman di-retry dengan <code>Idempotency-Key</code></td></tr>
         </tbody>
     </table>
+    </div>
 </section>
 
 <section id="api-rate" data-doc="Rate limit & kuota" data-group="Referensi API">

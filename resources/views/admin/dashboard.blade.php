@@ -22,13 +22,52 @@
 @endphp
 <x-page-header title="Dashboard platform" sub="Ringkasan operasional Postivo." />
 
-<div class="grid gap-px border border-line bg-line sm:grid-cols-2 xl:grid-cols-5">
+@php
+    $signupsOpen = (bool) \App\Services\PlatformSettings::get('signups_open', true);
+    $canManage = auth()->user()->staffCan('settings.manage');
+@endphp
+<div @class([
+    'mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 p-4 border',
+    'border-amber-500/50 bg-amber-50/50' => !$signupsOpen,
+    'border-line bg-paper' => $signupsOpen,
+])>
+    <div class="flex items-start gap-3">
+        <span @class([
+            'mt-0.5 inline-flex size-3 rounded-full shrink-0',
+            'bg-amber-500 animate-pulse' => !$signupsOpen,
+            'bg-emerald-500' => $signupsOpen,
+        ])></span>
+        <div>
+            <p class="text-sm font-bold {{ $signupsOpen ? 'text-ink' : 'text-amber-800' }}">
+                Status Pendaftaran Akun: {{ $signupsOpen ? 'TERBUKA' : 'DIKUNCI / TERKUNCI' }}
+            </p>
+            <p class="mt-0.5 text-xs {{ $signupsOpen ? 'text-muted' : 'text-amber-700' }}">
+                {{ $signupsOpen ? 'Pengguna umum dapat membuat akun baru melalui formulir register.' : 'Pendaftaran baru ditutup. Pengguna umum tidak dapat membuat akun baru saat ini.' }}
+            </p>
+        </div>
+    </div>
+    @if($canManage)
+        <form method="POST" action="{{ route('admin.settings.toggle-signups') }}" class="shrink-0" onsubmit="return confirm('Apakah Anda yakin ingin {{ $signupsOpen ? 'MENGUNCI' : 'MEMBUKA' }} pendaftaran akun baru?')">
+            @csrf
+            <input type="hidden" name="reason" value="{{ $signupsOpen ? 'Kunci pendaftaran akun dari dashboard' : 'Buka kembali pendaftaran akun dari dashboard' }}">
+            <button type="submit" @class([
+                'btn-sm font-semibold whitespace-nowrap',
+                'bg-red-600 text-white hover:bg-red-700' => $signupsOpen,
+                'bg-emerald-600 text-white hover:bg-emerald-700' => !$signupsOpen,
+            ])>
+                {{ $signupsOpen ? '🔒 Kunci Pendaftaran Akun' : '🔓 Buka Pendaftaran Akun' }}
+            </button>
+        </form>
+    @endif
+</div>
+
+<div class="grid grid-cols-1 gap-px border border-line bg-line sm:grid-cols-2 xl:grid-cols-5">
     @foreach($kpi as [$l, $v, $sub, $tone])
         <div class="bg-white p-5"><p class="kicker">{{ $l }}</p><p @class(['mt-2 text-2xl font-semibold tracking-tight tabular-nums', 'text-red-500' => $tone === 'red'])>{{ $v }}</p>@if($sub)<p class="hint">{{ $sub }}</p>@endif</div>
     @endforeach
 </div>
 
-<div class="mt-6 grid gap-6 lg:grid-cols-3">
+<div class="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-3">
     <section class="card lg:col-span-2">
         <div class="border-b border-line px-5 py-3"><h2 class="kicker">Perlu perhatian</h2></div>
         <ul class="divide-y divide-line">
@@ -51,7 +90,7 @@
 
 <div class="mt-6 card">
     <div class="border-b border-line px-5 py-3"><h2 class="kicker">Status email 30 hari</h2></div>
-    <div class="grid gap-px bg-line sm:grid-cols-3 lg:grid-cols-9">
+    <div class="grid grid-cols-2 gap-px bg-line sm:grid-cols-3 lg:grid-cols-9">
         @foreach(['QUEUED','SENT','DELIVERED','DEFERRED','BOUNCED','COMPLAINED','FAILED','SUPPRESSED','SENDING'] as $st)
             <div class="bg-white p-4"><p class="kicker">{{ $st }}</p><p class="mt-1 text-lg font-semibold tabular-nums">{{ number_format($s30[$st] ?? 0) }}</p></div>
         @endforeach

@@ -8,10 +8,10 @@
         @csrf
         <div>
             <label class="label" for="email">Email</label>
-            <input class="input" id="email" name="email" type="email" value="{{ old('email') }}" required autofocus>
+            <input class="input" id="email" name="email" type="email" autocomplete="email" value="{{ old('email') }}" required autofocus>
             @error('email')<p class="err">{{ $message }}</p>@enderror
         </div>
         <button class="btn-primary w-full">Kirim tautan</button>
-        <a href="{{ route('login') }}" class="block text-center text-sm text-muted underline">Kembali ke halaman masuk</a>
+        <a href="{{ route('login') }}" class="flex min-h-9 items-center justify-center text-center text-sm text-muted underline">Kembali ke halaman masuk</a>
     </form>
 @endsection

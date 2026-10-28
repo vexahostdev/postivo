@@ -17,7 +17,8 @@ class DomainController extends Controller
 {
     public static function nameRules(): array
     {
-        return ['required', 'string', 'max:191', 'regex:/^(?=.{4,191}$)([a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,}$/i'];
+        // 183 = 191 - 8 agar host turunan "bounces.<domain>" tetap muat di kolom.
+        return ['required', 'string', 'max:183', 'regex:/^(?=.{4,183}$)([a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,}$/i'];
     }
 
     public function index(): JsonResponse

@@ -65,6 +65,7 @@ class BillingTest extends TestCase
         $this->actingAs($this->user)->post("/console/billing/checkout/free", ["months" => 1])->assertNotFound();
         $viewer = User::create(['name' => 'V', 'email' => 'v@t.test', 'password' => 'password-123456']);
         Member::create(['organization_id' => $this->org->id, 'user_id' => $viewer->id, 'role' => MemberRole::VIEWER]);
+        $this->flushSession();
         $this->actingAs($viewer)->get('/console/billing/checkout/starter')->assertForbidden();
     }
 
@@ -75,6 +76,90 @@ class BillingTest extends TestCase
         $this->hook(['external_id' => 'PSV-X', 'status' => 'PAID'], ['x-callback-token' => 'cb-token'])->assertOk();
     }
 
+    public function test_callback_credentials_are_never_persisted_or_shown_to_support(): void
+    {
+        $order = $this->order();
+        Notification::fake();
+        $payload = [
+            'id' => 'inv_1', 'external_id' => $order->external_id, 'status' => 'PAID',
+            'amount' => 198000, 'payment_channel' => 'QRIS', 'callback_token' => 'cb-token',
+            'extra' => ['callback_token' => 'nested-secret'],
+        ];
+
+        $this->hook($payload, [])->assertOk()->assertJsonPath('status', 'success');
+        $this->hook($payload, [])->assertOk()->assertJsonPath('status', 'duplicate');
+        $event = \App\Models\WebhookEvent::firstOrFail();
+        $safePayload = array_diff_key($payload, array_flip(['callback_token', 'extra']));
+        $this->assertSame($safePayload, $event->payload);
+        $this->assertSame($safePayload, json_decode(\Illuminate\Support\Facades\DB::table('webhook_events')->where('id', $event->id)->value('payload'), true));
+        $this->assertSame($safePayload, $order->refresh()->raw_payload);
+        Notification::assertSentToTimes($this->user, PaymentReceivedNotification::class, 1);
+
+        $support = User::create(['name' => 'Support', 'email' => 'support@example.test', 'password' => 'password-123456']);
+        $support->forceFill(['platform_role' => 'support'])->save();
+        config(['postivo.admin.require_2fa' => false]);
+        $this->actingAs($support)->get('/admin/billing/orders/'.$order->id)
+            ->assertOk()->assertDontSee('cb-token')->assertDontSee('nested-secret')->assertDontSee('callback_token');
+        $this->post('/admin/billing/orders/'.$order->id.'/mark-paid', ['reason' => 'Unauthorized settlement attempt'])
+            ->assertForbidden();
+    }
+
+    public function test_header_authenticated_callback_settles_without_retaining_credentials(): void
+    {
+        $order = $this->order();
+        Notification::fake();
+        $payload = ['id' => 'inv_1', 'external_id' => $order->external_id, 'status' => 'PAID', 'amount' => 198000];
+
+        $this->hook($payload, ['x-callback-token' => 'cb-token'])->assertOk()->assertJsonPath('status', 'success');
+        $this->assertSame('PAID', $order->refresh()->status);
+        $this->assertSame($payload, $order->raw_payload);
+        $this->assertSame($payload, \App\Models\WebhookEvent::firstOrFail()->payload);
+    }
+
+    public function test_nested_business_fields_are_rejected_before_callback_persistence(): void
+    {
+        $this->hook(['external_id' => ['callback_token' => 'nested-secret'], 'status' => 'PAID'])->assertUnprocessable();
+        $this->assertSame(0, \App\Models\WebhookEvent::count());
+    }
+
+    public function test_non_scalar_callback_token_is_rejected_without_flashing_input(): void
+    {
+        $this->post('/api/payment/xendit/callback', ['callback_token' => ['cb-token']])
+            ->assertForbidden()->assertSessionMissing('_old_input');
+        $this->assertSame(0, \App\Models\WebhookEvent::count());
+    }
+
+    public function test_form_callback_validation_does_not_flash_credentials_to_session(): void
+    {
+        $this->post('/api/payment/xendit/callback', [
+            'callback_token' => 'cb-token', 'external_id' => ['bad' => 'nested-secret'], 'status' => 'PAID',
+        ])->assertUnprocessable()->assertJsonPath('message', 'Invalid callback payload.')
+            ->assertSessionMissing('_old_input');
+        $this->assertSame(0, \App\Models\WebhookEvent::count());
+    }
+
+    public function test_legacy_callback_credentials_are_filtered_on_display_and_reprocessing(): void
+    {
+        $order = $this->order();
+        Notification::fake();
+        $safe = ['id' => 'inv_1', 'external_id' => $order->external_id, 'status' => 'PAID', 'amount' => 198000];
+        $id = \Illuminate\Support\Facades\DB::table('webhook_events')->insertGetId([
+            'provider' => 'xendit', 'event_id' => 'inv_1', 'event_type' => 'paid', 'processing_status' => 'failed',
+            'payload' => json_encode($safe + ['callback_token' => 'legacy-token', 'extra' => ['secret' => 'nested-secret']]),
+            'created_at' => now(), 'updated_at' => now(),
+        ]);
+        $staff = User::create(['name' => 'Support', 'email' => 'legacy-support@example.test', 'password' => 'password-123456']);
+        $staff->forceFill(['platform_role' => 'support'])->save();
+        config(['postivo.admin.require_2fa' => false]);
+
+        $this->actingAs($staff)->get('/admin/billing/orders/'.$order->id)
+            ->assertOk()->assertDontSee('legacy-token')->assertDontSee('nested-secret')->assertDontSee('callback_token');
+        $staff->forceFill(['platform_role' => 'finance'])->save();
+        $this->post('/admin/billing/events/'.$id.'/reprocess')->assertRedirect();
+        $this->assertSame('PAID', $order->refresh()->status);
+        $this->assertSame($safe, $order->raw_payload);
+    }
+
     public function test_paid_webhook_activates_plan_once_and_is_idempotent(): void
     {
         $o = $this->order();
@@ -83,7 +168,8 @@ class BillingTest extends TestCase
 
         $this->hook($p)->assertOk()->assertJsonPath('status', 'success');
         $this->hook($p)->assertOk()->assertJsonPath('status', 'duplicate');
-        $this->hook($p + ['status' => 'SETTLED'])->assertOk(); // event lain, tetap tidak ganda
+        $this->hook(array_replace($p, ['status' => 'SETTLED']))->assertOk();
+        $this->assertSame(2, \App\Models\WebhookEvent::count());
 
         $org = $this->org->refresh();
         $this->assertSame('starter', $org->plan);
