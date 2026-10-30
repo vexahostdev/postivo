@@ -88,7 +88,7 @@
             <div class="mt-4 grid grid-cols-1 gap-6 sm:mt-5 lg:grid-cols-12 lg:gap-8">
                 <div class="lg:col-span-5">
                     <h1 class="text-[17px] font-semibold leading-[1.2] tracking-[-0.025em] text-brand sm:text-[19px]">
-                        Transactional email API and SMTP relay for developers — send, track and debug every message.
+                        Transactional email API and SMTP relay for developers send, track and debug every message.
                     </h1>
                     <p class="mt-3 max-w-[420px] text-[13px] leading-relaxed text-neutral-600">
                         One REST endpoint or one SMTP login. Guided SPF/DKIM/DMARC setup, automatic suppression, and a timeline for every email.
@@ -251,8 +251,8 @@
                 <a class="font-medium hover:underline" href="{{ route('console.dashboard') }}">Console ↗</a>
             </nav>
             <div class="relative select-none overflow-hidden" aria-hidden="true">
-                <svg viewBox="0 0 1000 245" class="block h-auto w-full"><text x="-6" y="236" fill="#FE0000" font-size="260" font-weight="900" font-family="Inter Variable, Inter, sans-serif" letter-spacing="-14.3">POSTIVO</text></svg>
-                <span class="absolute bottom-[9%] left-[1.1%] rounded-full border border-brand/30 bg-white/70 px-3 py-[3px] font-mono text-[10px] text-brand/60 sm:text-[13px]">250 OK</span>
+                <svg viewBox="0 0 1000 245" class="block h-auto w-full"><text x="500" y="236" text-anchor="middle" textLength="968" lengthAdjust="spacingAndGlyphs" fill="#FE0000" font-size="260" font-weight="900" font-family="Inter Variable, Inter, sans-serif" letter-spacing="-14.3">POSTIVO</text></svg>
+                <span class="absolute bottom-[9%] left-[2.4%] rounded-full border border-brand/30 bg-white/70 px-3 py-[3px] font-mono text-[10px] text-brand/60 sm:text-[13px]">250 OK</span>
             </div>
             <p class="mt-2 text-[10px] text-brand">{{ \App\Support\Brand::footer() }} · <a class="underline" href="mailto:{{ config('postivo.support_email') }}">{{ config('postivo.support_email') }}</a> · <a class="underline" href="{{ route('legal.terms') }}">Syarat</a> · <a class="underline" href="{{ route('legal.privacy') }}">Privasi</a> · <a class="underline" href="{{ route('legal.aup') }}">AUP</a></p>
         </div>
