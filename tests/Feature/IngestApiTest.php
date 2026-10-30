@@ -180,6 +180,7 @@ class IngestApiTest extends TestCase
         $other = Organization::create(['name' => 'O', 'slug' => 'o']);
         $ou = User::create(['name' => 'O', 'email' => 'o@t.test', 'password' => 'password-123456']);
         Member::create(['organization_id' => $other->id, 'user_id' => $ou->id, 'role' => 'owner']);
-        $this->actingAs($ou)->get('/console/domains')->assertOk()->assertDontSee('mail.t.test');
+        $res = $this->flushSession()->actingAs($ou)->get('/console/domains');
+        $res->assertOk()->assertDontSee('mail.t.test');
     }
 }
