@@ -71,7 +71,11 @@ return [
     'relay' => [
         'driver' => env('POSTIVO_RELAY', 'log'),
         'stalwart_dsn' => env('POSTIVO_STALWART_DSN'),
-        'brevo_dsn' => env('POSTIVO_BREVO_DSN'),
+        'brevo_dsn' => env('POSTIVO_BREVO_DSN') ?: (
+            env('BREVO_SMTP_LOGIN') && env('BREVO_SMTP_KEY')
+                ? 'smtp://'.rawurlencode((string) env('BREVO_SMTP_LOGIN')).':'.rawurlencode((string) env('BREVO_SMTP_KEY')).'@'.env('BREVO_SMTP_HOST', 'smtp-relay.brevo.com').':'.(int) env('BREVO_SMTP_PORT', 587)
+                : null
+        ),
         'breaker_failures' => 5,
         'breaker_window' => 60,
         'breaker_open_seconds' => 120,
