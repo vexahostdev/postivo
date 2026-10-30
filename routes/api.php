@@ -12,6 +12,7 @@ Route::get('/ping', fn () => response()->json(['ok' => true, 'service' => 'posti
 
 Route::middleware('api.key:emails:send')->group(function () {
     Route::post('/emails', [EmailController::class, 'store']);
+    Route::post('/emails/send', [EmailController::class, 'store']);
     Route::post('/emails/batch', [EmailController::class, 'batch']);
 });
 

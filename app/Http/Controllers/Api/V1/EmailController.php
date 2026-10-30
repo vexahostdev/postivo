@@ -70,6 +70,10 @@ class EmailController extends Controller
 
     public function store(Request $request, EmailIngestService $ingest): JsonResponse
     {
+        if ($request->has('to') && is_string($request->input('to'))) {
+            $request->merge(['to' => [$request->input('to')]]);
+        }
+
         $data = Validator::make($request->all(), self::rules())->validate();
         [$email, $replay] = $this->accept($ingest, $request, $data, $request->header('Idempotency-Key'));
 
