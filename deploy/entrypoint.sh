@@ -21,4 +21,11 @@ fi
 if [ -n "${POSTIVO_SPOOL_DIR:-}" ]; then mkdir -p "$POSTIVO_SPOOL_DIR"; chgrp 82 "$POSTIVO_SPOOL_DIR" 2>/dev/null || true; chmod 2770 "$POSTIVO_SPOOL_DIR" 2>/dev/null || true; fi
 
 chown -R www-data:www-data storage bootstrap/cache 2>/dev/null || true
+
+# Jalankan background cron scheduler otomatis bila kontainer berjalan sebagai app/php-fpm
+if [ "$1" = "php-fpm" ]; then
+    echo "* * * * * cd /var/www/html && php artisan schedule:run >> /dev/null 2>&1" > /etc/crontabs/root 2>/dev/null || true
+    crond -b -l 8 2>/dev/null || true
+fi
+
 exec "$@"
