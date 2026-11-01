@@ -26,6 +26,7 @@ chown -R www-data:www-data storage bootstrap/cache 2>/dev/null || true
 if [ "$1" = "php-fpm" ]; then
     echo "* * * * * cd /var/www/html && php artisan schedule:run >> /dev/null 2>&1" > /etc/crontabs/root 2>/dev/null || true
     crond -b -l 8 2>/dev/null || true
+    php artisan postivo:heartbeat 2>/dev/null || true
 fi
 
 exec "$@"
