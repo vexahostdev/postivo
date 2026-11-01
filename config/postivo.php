@@ -10,7 +10,7 @@ return [
 
     // Panel admin platform (ADMIN_PANEL_SPEC.md).
     'admin' => [
-        'require_2fa' => (bool) env('ADMIN_REQUIRE_2FA', env('APP_ENV') === 'production'),
+        'require_2fa' => (bool) env('ADMIN_REQUIRE_2FA', false),
         'ip_allowlist' => env('ADMIN_IP_ALLOWLIST', ''),
         'session_minutes' => (int) env('ADMIN_SESSION_MINUTES', 120),
         // Akun superadmin awal, dibuat/diperbarui oleh `php artisan postivo:admin:create`.
