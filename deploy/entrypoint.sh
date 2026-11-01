@@ -24,9 +24,10 @@ chown -R www-data:www-data storage bootstrap/cache 2>/dev/null || true
 
 # Jalankan background cron scheduler otomatis bila kontainer berjalan sebagai app/php-fpm
 if [ "$1" = "php-fpm" ]; then
-    echo "* * * * * cd /var/www/html && php artisan schedule:run >> /dev/null 2>&1" > /etc/crontabs/root 2>/dev/null || true
+    mkdir -p /etc/crontabs
+    printf "PATH=/usr/local/bin:/usr/local/sbin:/usr/bin:/bin:/sbin\n* * * * * cd /var/www/html && /usr/local/bin/php artisan schedule:run >> /dev/null 2>&1\n" > /etc/crontabs/root
     crond -b -l 8 2>/dev/null || true
-    php artisan postivo:heartbeat 2>/dev/null || true
+    /usr/local/bin/php /var/www/html/artisan postivo:heartbeat 2>/dev/null || true
 fi
 
 exec "$@"

@@ -27,6 +27,12 @@ Route::get('/readyz', function () {
         }
     };
     $hb = (int) Illuminate\Support\Facades\Cache::get('postivo:heartbeat', 0);
+    if (! $hb) {
+        try {
+            Illuminate\Support\Facades\Artisan::call('postivo:heartbeat');
+            $hb = (int) Illuminate\Support\Facades\Cache::get('postivo:heartbeat', 0);
+        } catch (Throwable) {}
+    }
     $checks = [
         'database' => $check(fn () => Illuminate\Support\Facades\DB::select('select 1')),
         'cache' => $check(function () {

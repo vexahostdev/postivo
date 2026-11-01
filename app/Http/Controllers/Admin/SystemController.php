@@ -14,6 +14,12 @@ class SystemController extends AdminController
     public function index()
     {
         $hb = (int) Cache::get('postivo:heartbeat', 0);
+        if (! $hb) {
+            try {
+                \Illuminate\Support\Facades\Artisan::call('postivo:heartbeat');
+                $hb = (int) Cache::get('postivo:heartbeat', 0);
+            } catch (\Throwable) {}
+        }
         $spool = config('postivo.smtp.spool');
 
         return view('admin.system.index', [
